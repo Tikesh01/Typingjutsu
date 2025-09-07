@@ -1,0 +1,54 @@
+# a Web development framework
+install
+  python -m pip install django 
+
+create project folder 
+  django-admin startproject Europe
+
+create app
+  python manage.py startapp France 
+
+Execute
+  python manage.py run server - to execute
+  
+# 5.2 latest version
+# https://docs.djangoproject.com/5.2/intro/tutorial01/
+
+# virtual environment
+create
+  python -m venv venv
+
+activate
+  venv\Scripts\activate
+  
+  
+path set of python
+
+1. fully unistall python
+2. download th epython From official website
+3. make a new folder python_setup
+4. put there
+5. run as administrator 
+6. click nessecary buttons
+  inst
+    
+Django model From
+
+python  manage.py makemigrations
+
+the source code
+Video Presentation - 15 to 20
+PPT
+Report File(documentation)
+  abstract
+  introduction-What,adwantages,disavantages 6 to 8 page
+  litrature review  see others and your new features
+  problem identification
+  methodology - schema, algos, diagrams
+  result and Output
+  future Scope
+  CONCLUSION
+  REFRENCESS 
+
+  times-square roman-12
+  onetin121@gmail.com
