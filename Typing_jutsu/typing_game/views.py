@@ -1,0 +1,6 @@
+from django.shortcuts import render
+from django.http import HttpResponse
+
+def signup(request):
+    return render(request, 'typing_game/signup.html')
+    
