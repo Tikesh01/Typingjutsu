@@ -1,14 +1,75 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cedarville+Cursive&family=Great+Vibes&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'global.css' %}">
     <title>
-        {% block title %}
-        {% endblock %}
+        {% block title %}{% endblock %}
     </title>
 </head>
 <body>
-    {% block page %}{% endblock %}
+    <nav>
+        <ul>
+            <li>
+                <div class="logoAndText">
+                    <img src="#" alt="">
+                    <h1 id="logoText">Typing Jutsu</h1>
+                </div>
+            </li>
+            <li><a href="{% url 'typing_game:home' %}">Home</a></li>
+            <li><a href="{% url 'typing_game:practice' %}">Practice</a></li>
+            <li><a href="{% url 'typing_game:competitions' %}">Competitions</a></li>
+            <li><a href="{% url 'typing_game:leaderboard' %}">Leaderboard</a></li>
+            {% if user.is_authenticated %}
+                <li><a href="{% url 'typing_game:profile' %}">Profile</a></li>
+                <li><a href="{% url 'typing_game:logout' %}" class="button">Logout</a></li>
+            {% else %}
+                <li><a href="{% url 'typing_game:login' %}" class="button">Login</a></li>
+                <li><a href="{% url 'typing_game:signup' %}" class="button">Sign Up</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <main>
+        {% block page %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>About Typing Jutsu</h3>
+                <ul>
+                    <li><a href="{% url 'typing_game:about' %}">About Us</a></li>
+                    <li><a href="{% url 'typing_game:contact' %}">Contact</a></li>
+                    <li><a href="{% url 'typing_game:terms' %}">Terms of Service</a></li>
+                    <li><a href="{% url 'typing_game:privacy' %}">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="{% url 'typing_game:practice' %}">Practice</a></li>
+                    <li><a href="{% url 'typing_game:competitions' %}">Competitions</a></li>
+                    <li><a href="{% url 'typing_game:leaderboard' %}">Leaderboard</a></li>
+                    <li><a href="{% url 'typing_game:help' %}">Help</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Connect With Us</h3>
+                <ul>
+                    <li><a href="#"><i class="fab fa-twitter"></i> Twitter</a></li>
+                    <li><a href="#"><i class="fab fa-discord"></i> Discord</a></li>
+                    <li><a href="#"><i class="fab fa-github"></i> GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
