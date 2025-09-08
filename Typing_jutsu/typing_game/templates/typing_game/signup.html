@@ -9,7 +9,7 @@ Sign-Up Typing Jutsu
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const select = document.getElementById('role');
-        const ls = ["email", "mobile_num", "password", "confirm_password"];
+        const ls = ["email", "mobile_num", "confirm_password"];
         const inputs = ls.map(id => document.getElementById(id)).filter(el => el !== null);
 
         function toggleInputs() {

@@ -5,9 +5,14 @@ Login - Typing Jutsu
 {% endblock %}
 
 {% block page %}
-<div class="form-container">
+<style>
+    #loginFormContainer{
+        width: 50%;
+    }
+</style>
+<div class="form-container" id="loginFormContainer" >
     <h2>Welcome Back</h2>
-    <form method="post" action="{% url 'typing_game:login' %}">
+    <form method="post" action="{% url 'typing_game:login' %}" id="loginForm">
         {% csrf_token %}
         <div class="form-group">
             <label for="username">Username</label>
