@@ -34,8 +34,19 @@
             <li><a href="{% url 'typing_game:practice' %}">Practice</a></li>
             <li><a href="{% url 'typing_game:competitions' %}">Competitions</a></li>
             <li><a href="{% url 'typing_game:leaderboard' %}">Leaderboard</a></li>
-            {% if user.is_authenticated %}
-                <li><a href="{% url 'typing_game:profile' %}">Profile</a></li>
+
+            {% if is_authenticated %}
+                <li>
+                    <details id="profile">
+                        <summary>
+                            {{ request.session.user_name }} <i class="fa-solid fa-circle-chevron-down"></i>
+                        </summary>
+                        <div class="profile-details">
+                            <p>Role: {{ user_role|capfirst }}</p>
+                            <a href="{% url 'typing_game:logout' %}">Logout</a>
+                        </div>
+                    </details>
+                </li>
                 <li><a href="{% url 'typing_game:logout' %}" class="button">Logout</a></li>
             {% else %}
                 <li><a href="{% url 'typing_game:login' %}" class="button">Login</a></li>
@@ -52,10 +63,10 @@
         <div class="footer-content">
             <div class="footer-section">
                 <h3>About Typing Jutsu</h3>
-                <ul>
-                    <li><a href="{% url 'typing_game:about' %}">About Us</a></li>
-                    <li><a href="{% url 'typing_game:contact' %}">Contact</a></li>
-                    <li><a href="{% url 'typing_game:terms' %}">Terms of Service</a></li>
+                <ul >
+                    <li><a href="">About Us</a></li>
+                    <li><a href="">Contact</a></li>
+                    <li><a href="{% url 'typing_game:terms' %}">Terms Of Service</a></li>
                     <li><a href="{% url 'typing_game:privacy' %}">Privacy Policy</a></li>
                 </ul>
             </div>

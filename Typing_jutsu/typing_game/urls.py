@@ -12,12 +12,11 @@ urlpatterns = [
     path('home/', views.home, name='home'),
     path('practice/', views.practice, name='practice'),
     path('competitions/', views.competitions, name='competitions'),
+    path('competitions/create/', views.create_competition, name='create_competition'),
+    path('competitions/<int:competition_id>/join/', views.join_competition, name='join_competition'),
     path('leaderboard/', views.leaderboard, name='leaderboard'),
-    path('profile/', views.profile, name='profile'),
     
     # Footer URLs
-    path('about/', views.about, name='about'),
-    path('contact/', views.contact, name='contact'),
     path('terms/', views.terms, name='terms'),
     path('privacy/', views.privacy, name='privacy'),
     path('help/', views.help_view, name='help'),

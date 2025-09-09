@@ -17,6 +17,7 @@ class Participant(models.Model):
     def __str__(self):
         return f"Participant: {self.name}"
 
+
 class Organizer(models.Model):
     name = models.CharField(max_length=30)
     email = models.EmailField(max_length=40, unique=True)
@@ -34,3 +35,15 @@ class Organizer(models.Model):
 
     def __str__(self):
         return f"Organizer: {self.name} ({self.email})"
+    
+class Competition(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    organizer = models.ForeignKey(Organizer, on_delete=models.CASCADE, related_name='competitions')
+    participants = models.ManyToManyField(Participant, related_name='competitions', blank=True)
+    type =
+
+    def __str__(self):
+        return self.title

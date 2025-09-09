@@ -104,9 +104,51 @@ nav ul {
             font-family: "Great Vibes", cursive;
             font-weight: 400;
             font-style: normal;
-            font-size: 3.2em;
+            font-size: 3em;
             /* background: #000;    */
         }
+    }
+    #profile {
+        border: 1px solid var(--accent-color);
+        padding: 0.5em 1em;
+        border-radius: 20px;
+    }
+
+    #profile summary {
+        list-style: none; /* removes default marker in some browsers */
+    }
+
+    #profile summary::-webkit-details-marker {
+        display: none; /* Chrome, Safari */
+    }
+
+    #profile summary::marker {
+        display: none; /* Firefox */
+    }
+
+    #profile .fa-circle-chevron-down {
+        margin-left: 1em;
+    }
+
+    #profile[open] .profile-details {
+        position: absolute;
+        background-color: var(--gray-800);
+        border: 1px solid var(--accent-color);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+        min-width: 150px;
+    }
+
+    .profile-details p {
+        margin-bottom: 0.75rem;
+    }
+
+    .profile-details a {
+        display: block;
+        padding: 0.5rem 0;
     }
 }
 
@@ -283,7 +325,8 @@ h1 {
 }
 
 .form-group input,
-.form-group select {
+.form-group select, 
+.form-group textarea {
     width: 100%;
     padding: 0.75rem 1rem;
     background-color: var(--gray-700);
@@ -295,13 +338,15 @@ h1 {
 }
 
 .form-group input:disabled,
-.form-group select:disabled {
+.form-group select:disabled,
+.form-group textarea:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus, 
+.form-group textarea:focus {
     outline: none;
     border-color: var(--accent-color);
     box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
