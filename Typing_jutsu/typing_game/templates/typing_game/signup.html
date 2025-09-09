@@ -18,6 +18,10 @@ Sign-Up Typing Jutsu
             inputs.forEach(input => {
                 input.disabled = disable;
                 input.required = !disable;
+                const label = document.querySelector(`label[for="${input.id}"]`);
+                if (label) {
+                    label.style.color = disable ? "#888" : "";
+                }
             });
         }
 

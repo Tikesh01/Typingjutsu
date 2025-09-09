@@ -5,61 +5,80 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from .models import user
+from .models import Participant, Organizer
 
 def signup(request):
     if request.method == 'POST':
         try:
-            # Get form data
+            # Get basic form data
             role = request.POST.get('role')
             name = request.POST.get('username')
-            email = request.POST.get('email')
             password = request.POST.get('password')
-            confirm_password = request.POST.get('confirm_password')
-            mobile_num = request.POST.get('mobile_num')
 
-            # Validate required fields
-            if not all([role, name, email, password, confirm_password]):
-                messages.error(request, 'All fields are required')
+            # Basic validation for all users
+            if not all([role, name, password]):
+                messages.error(request, 'Name and password are required')
                 return render(request, 'typing_game/signup.html')
 
-            # Validate email format
-            try:
-                validate_email(email)
-            except ValidationError:
-                messages.error(request, 'Invalid email format')
-                return render(request, 'typing_game/signup.html')
 
-            # Check if email already exists
-            if user.objects.filter(email=email).exists():
-                messages.error(request, 'Email already registered')
-                return render(request, 'typing_game/signup.html')
-
-            # Validate password
             if len(password) < 8:
                 messages.error(request, 'Password must be at least 8 characters long')
                 return render(request, 'typing_game/signup.html')
+            if role == 'participant':
+                # Simple registration for participants
+                new_user = Participant(
+                    name=name,
+                )
+                new_user.set_password(password)
+                
+                # Check if this password is already used by comparing hashes
+                existing_participants = Participant.objects.all()
+                for participant in existing_participants:
+                    if participant.check_password(password):
+                        messages.error(request, 'This password is already used by another participant. Please choose a different password.')
+                        return render(request, 'typing_game/signup.html')
+                
+                new_user.save()
+                messages.success(request, 'Welcome to Typing Jutsu! Please login to start practicing.')
+                
+            elif role == 'organizer':
+                # Get additional data for organizers
+                email = request.POST.get('email')
+                mobile_num = request.POST.get('mobile_num')
+                confirm_password = request.POST.get('confirm_password')
+                
+                # Additional validation for organizers
+                if (password != confirm_password) and confirm_password != None:
+                    messages.error(request, 'Passwords do not match')
+                    return render(request, 'typing_game/signup.html')
+            
+                if not all([email, mobile_num]):
+                    messages.error(request, 'Email and mobile number are required for organizers')
+                    return render(request, 'typing_game/signup.html')
 
-            if password != confirm_password:
-                messages.error(request, 'Passwords do not match')
-                return render(request, 'typing_game/signup.html')
+                try:
+                    validate_email(email)
+                except ValidationError:
+                    messages.error(request, 'Invalid email format')
+                    return render(request, 'typing_game/signup.html')
 
-            # Validate mobile number
-            if mobile_num and (not mobile_num.isdigit() or len(mobile_num) != 10):
-                messages.error(request, 'Invalid mobile number')
-                return render(request, 'typing_game/signup.html')
+                if Organizer.objects.filter(email=email).exists():
+                    messages.error(request, 'Email already registered')
+                    return render(request, 'typing_game/signup.html')
 
-            # Create new user
-            new_user = user(
-                name=name,
-                email=email,
-                mobile_num=mobile_num,
-                role=role
-            )
-            new_user.set_password(password)
-            new_user.save()
+                if not mobile_num.isdigit() or len(mobile_num) != 10:
+                    messages.error(request, 'Invalid mobile number')
+                    return render(request, 'typing_game/signup.html')
 
-            messages.success(request, 'Account created successfully! Please login.')
+                new_user = Organizer(
+                    name=name,
+                    email=email,
+                    mobile_num=mobile_num,
+                )
+                new_user.set_password(password)
+                new_user.save()
+                messages.success(request, 'Organizer account created successfully! Please login.')
+
             return redirect('typing_game:login')
 
         except Exception as e:
