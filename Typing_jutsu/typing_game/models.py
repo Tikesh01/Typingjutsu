@@ -43,7 +43,10 @@ class Competition(models.Model):
     end_time = models.DateTimeField()
     organizer = models.ForeignKey(Organizer, on_delete=models.CASCADE, related_name='competitions')
     participants = models.ManyToManyField(Participant, related_name='competitions', blank=True)
-    type =
-
+    type = models.CharField(max_length=15, choices=[('Normal','normal'), ('Reverse','reverse'), ('Jumble-Word','jumble-Word')], default=None)
+    paragraphs = models.JSONField(default=list) 
+    expired = models.BooleanField(default=False)
+    started = models.BooleanField(default=False)
+    
     def __str__(self):
         return self.title
