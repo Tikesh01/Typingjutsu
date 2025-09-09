@@ -5,7 +5,7 @@ Create Competition - Typing Jutsu
 {% endblock %}
 
 {% block page %}
-<div class="form-container" style="width: 50%;">
+<div class="form-container" style="width: 50%;" id="create_competition_form_container">
     <h2>Create a New Competition</h2>
     <form method="post">
         {% csrf_token %}
@@ -13,9 +13,23 @@ Create Competition - Typing Jutsu
             <label for="title">Competition Title</label>
             <input type="text" id="title" name="title" placeholder="e.g., Weekly Speed Challenge" required>
         </div>
+         <div class="form-group">
+            <label for="type">Competition Type</label>
+            <select id="type" name="type" required onchange="ask_for_ans()">
+                <option value="Normal">Normal</option>
+                <option value="Reverse">Reverse</option>
+                <option value="Jumble-words" >Jumble-words</option>
+            </select>
+        </div>
         <div class="form-group">
             <label for="description">Description</label>
             <textarea id="description" name="description" rows="3"  placeholder="Describe the rules and goals of the competition." required></textarea>
+        </div>
+        <div class="form-group-container" id="paragraphs_and_ans">
+            <div class="form-group">
+                <label for="paragraphs">Paragraph(s) <p style="color: cadetblue; font-size:x-small" id="para_info"><i class="fas fa-info-circle"></i> Press enter key 2 times, if you want to upload multiple paragraphs!</p></label>
+                <textarea name="paragraphs" id="paragraphs" placeholder="Enter the paragraphs which will be typed" rows="4"></textarea>
+            </div>
         </div>
         <div class="form-content">
             <div class="form-group">
@@ -30,4 +44,50 @@ Create Competition - Typing Jutsu
         <div class="button-group" style="margin-top: 1.5rem;"><button type="submit" class="form-submit">Create Competition</button></div>
     </form>
 </div>
+<script>
+    const inpDate = ['start_time', 'end_time']
+    for(let i=0; i<inpDate.length; i++){
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        const formattedDateTime = now.toISOString().slice(0, 16);
+        document.getElementById(inpDate[i]).value = formattedDateTime;
+    }
+    function ask_for_ans(){
+        const select = document.getElementById('type')
+        const container = document.getElementById('paragraphs_and_ans');
+        const paraLabel = document.querySelector('label[for="paragraphs"]');
+        const paraInfo = document.getElementById('para_info');
+        const existingAnswerField = document.getElementById('ans_jumble_word_group');
+
+        // Reset styles and remove answer field if it exists
+        container.style.display = 'block';
+        container.style.gridTemplateColumns = 'none';
+        if (existingAnswerField) {
+            existingAnswerField.remove();
+        }
+        paraLabel.firstChild.textContent = 'Paragraph(s) '; // Reset label text
+        paraInfo.style.display = 'inline'; // Reset info display
+
+        if(select.value == 'Jumble-words'){
+            // Apply grid layout for Jumble-words
+            container.style.display = 'grid';
+            container.style.gridTemplateColumns = 'repeat(2, 1fr)';
+            container.style.gap = '1em';
+
+            // Create and append the answer textarea
+            const answerHtml = 
+            `<div class="form-group" id="ans_jumble_word_group">
+                <label for="ans_juble_word">Answer of each word </label>
+                <textarea name="ans_juble_word" id="ans_juble_word" placeholder="Enter the answers which will be matched" rows="6"></textarea>
+            </div>`;
+            container.insertAdjacentHTML('beforeend', answerHtml);
+            paraInfo.style.display = 'none';
+            paraLabel.firstChild.textContent = 'Jumble Words ';
+            document.getElementById('create_competition_form_container').style.width = '70%'
+        }
+        else{
+            document.getElementById('create_competition_form_container').style.width = '50%'
+        }
+    }
+</script>
 {% endblock %}
