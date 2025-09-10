@@ -1,0 +1,74 @@
+{% extends 'typing_game/base.html' %} 
+{% block title %} \
+Competitions 
+{% endblock %} 
+{% block page %}
+<style>
+	.page-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin: 2rem 0;
+	}
+	.competition-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 1.5rem;
+	}
+	.competition-card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+	}
+	.competition-card-actions {
+        display: flex;
+    }
+	.competition-card-header h3 {
+		margin-bottom: 0.5rem;
+	}
+	.competition-card p {
+		margin-bottom: 1rem;
+		color: var(--gray-100);
+		line-height: 1.6;
+	}
+	.competition-card .meta {
+		font-size: 0.875rem;
+		color: var(--accent-color);
+	}
+</style>
+
+<div class="page-header">
+	<h1>Competitions</h1>
+	{% if user_role == 'organizer' %}
+		<a href="{% url 'typing_game:create_competition' %}" class="button" >Organize Competition</a>
+	{% endif %}
+</div>
+
+<div class="competition-grid">
+	{% for competition in competitions %}
+		<div class="competition-card">
+			<div class="competition-card-header">
+				<h2>{{ competition.title }}</h2>
+				{% if user_role == 'participant' and not competition.is_joined %}
+					<a href="{% url 'typing_game:join_competition' competition.id %}" class="button">Join</a>
+				{% endif %} 
+				{% if user_role == 'organizer' and competition.organizer.id ==
+				request.session.get('user_id') %}
+					<a href="{% url 'typing_game:edit_competition' competition.id %}" class="button">Edit</a>
+					<a href="{% url 'typing_game:delete_competition' competition.id %}" class="button">Delete</a> 
+					{% if not competition.started %}
+						<a href="{% url 'typing_game:start_competition' competition.id %}" class="button">Start</a>
+					{% endif %}
+				{% else %}
+				{% endif %}
+			</div>
+			<p>{{ competition.description }}</p>
+			<p class="meta">Starts: {{ competition.start_time|date:"F d, Y P" }}</p> 
+			<p class="meta">Ends: {{ competition.end_time|date:"F d, Y P" }}</p>
+			<p class="meta">Organizer: {{ competition.organizer.name }}</p>
+		</div>
+	{% empty %}
+		<p>No competitions available at the moment. Check back soon!</p>
+	{% endfor %}
+</div>
+{% endblock %}

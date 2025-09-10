@@ -1,0 +1,85 @@
+{% extends 'typing_game/base.html' %}
+
+{% block title %}
+Home - Typing Jutsu
+{% endblock %}
+{% block page %}
+<style>
+    .hero {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), url('https://source.unsplash.com/random/1600x900/?keyboard,code') no-repeat center center/cover;
+        border-radius: 1rem;
+        margin: 2rem 0;
+        z-index: 1;
+    }
+    .hero h1 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    .hero p {
+        font-size: 1.25rem;
+        margin-bottom: 2rem;
+        color: var(--gray-100);
+    }
+    .section {
+        padding: 3rem 2rem;
+        margin-bottom: 2rem;
+        background-color: var(--gray-800);
+        border-radius: 1rem;
+    }
+    .section h2 {
+        text-align: center;
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+        color: var(--accent-color);
+    }
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+        text-align: center;
+    }
+    .feature i {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+    .feature h3 {
+        font-size: 1.5rem;
+        color: var(--text-color);
+    }
+</style>
+
+<div class="hero fade-in">
+    <h1>Master the Art of Typing</h1>
+    <p>Unleash your inner ninja and conquer the keyboard with speed and precision.</p>
+    <a href="{% url 'typing_game:signup' %}" class="button">Start Your Training</a>
+</div>
+
+<div class="section fade-in">
+    <h2>About Typing Jutsu</h2>
+    <p style="text-align: center; line-height: 1.8;">Typing Jutsu is a platform designed for both aspiring typists and seasoned professionals to hone their skills. Whether you're looking to improve your words-per-minute for daily tasks or preparing for competitive typing events, our dojo is the perfect place to train. We believe that typing is a fundamental skill in the digital age, and with the right practice, anyone can achieve mastery.</p>
+</div>
+
+<div class="section fade-in">
+    <h2>Features</h2>
+    <div class="features-grid">
+        <div class="feature">
+            <i class="fas fa-keyboard"></i>
+            <h3>Practice Arena</h3>
+            <p>Sharpen your skills in our dedicated practice area with a variety of texts.</p>
+        </div>
+        <div class="feature">
+            <i class="fas fa-trophy"></i>
+            <h3>Live Competitions</h3>
+            <p>Challenge others and prove your might in real-time typing competitions.</p>
+        </div>
+        <div class="feature">
+            <i class="fas fa-chart-line"></i>
+            <h3>Track Your Progress</h3>
+            <p>Monitor your WPM, accuracy, and see your improvement over time.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

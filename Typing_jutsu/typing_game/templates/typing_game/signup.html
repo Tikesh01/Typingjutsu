@@ -1,0 +1,90 @@
+{% extends 'typing_game/base.html' %}
+
+{% block title %}
+Sign-Up Typing Jutsu
+{% endblock %}
+
+{% block page %}
+{% block extra_head %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const select = document.getElementById('role');
+        const ls = ["email", "mobile_num", "confirm_password"];
+        const inputs = ls.map(id => document.getElementById(id)).filter(el => el !== null);
+
+        function toggleInputs() {
+            const option = select.value;
+            const disable = (option === 'participant');
+            inputs.forEach(input => {
+                input.disabled = disable;
+                input.required = !disable;
+                const label = document.querySelector(`label[for="${input.id}"]`);
+                if (label) {
+                    label.style.color = disable ? "#888" : "";
+                }
+            });
+        }
+
+        toggleInputs();
+        select.addEventListener('change', toggleInputs);
+    });
+</script>
+{% endblock %}
+<div class="form-container">
+    <h2>Create Account</h2>
+    <form method="post" action="{% url 'typing_game:signup' %}" id="signupForm">
+        {% csrf_token %}
+        <div class="form-content">
+            <div class="form-group">
+                <label for="role">Register as</label>
+                <select id="role" name="role" required> 
+                    <option value="participant" selected>Participant</option>
+                    <option value="organizer">Organizer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="username">User's name</label>
+                <input type="text" id="username" name="username" placeholder="Type your fullname" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label for="mobile_num">Mobile number</label>
+                <input type="text" maxlength="10" id="mobile_num" name="mobile_num" placeholder="Enter your mobile number" pattern="[0-9]{10}">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Create a password">
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password">
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button type="submit" class="form-submit">Sign Up</button>
+        </div>
+        
+        <div class="form-links">
+            Already have an account? <a href="{% url 'typing_game:login' %}">Log in</a>
+        </div>
+    </form>
+    <div class="form-divider">
+        <span>OR</span>
+    </div>
+    
+    <div class="oauth-buttons">
+        <button type="button" class="oauth-button">
+            <i class="fab fa-google"></i>
+            Continue with Google
+        </button>
+        <button type="button" class="oauth-button">
+            <i class="fab fa-github"></i>
+            Continue with GitHub
+        </button>
+    </div>
+</div>
+{% endblock %}
