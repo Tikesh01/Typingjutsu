@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_list_or_404
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
@@ -185,7 +185,7 @@ def competitions(request):
     - Participants can see upcoming competitions and join them.
     """
     context = get_auth_context(request)
-    all_competitions = Competition.objects.filter(end_time__gte=timezone.now()).order_by('start_time')
+    all_competitions = Competition.objects.filter(end_time__gte=timezone.now()).order_by('start_time') # Show started and upcoming
 
     if context['user_role'] == 'participant':
         user_id = request.session.get('user_id')
@@ -201,30 +201,108 @@ def competitions(request):
 def create_competition(request):
     """Allows organizers to create a new competition."""
     if request.method == 'POST':
-        title = request.POST.get('title')
-        description = request.POST.get('description')
-        start_time = request.POST.get('start_time')
-        end_time = request.POST.get('end_time')
-        organizer_id = request.session.get('user_id')
+        try:
+            title = request.POST.get('title')
+            competition_type = request.POST.get('type')
+            description = request.POST.get('description')
+            paragraphs_raw = request.POST.get('paragraphs')
+            start_time = request.POST.get('start_time')
+            end_time = request.POST.get('end_time')
+            organizer_id = request.session.get('user_id')
 
-        if not all([title, description, start_time, end_time]):
-            messages.error(request, "All fields are required.")
+            if not all([title, competition_type, description, start_time, end_time,paragraphs_raw]):
+                messages.error(request, "All fields are required.")
+                return render(request, 'typing_game/create_competition.html', get_auth_context(request))
+
+            paragraphs_list = [p.strip() for p in paragraphs_raw.split('\n\n') if p.strip()]
+            
+            # Prepare data for JSONField
+            paragraphs_data = []
+            if competition_type == 'Jumble-words':
+                answers_raw = request.POST.get('ans_juble_word', '')
+                answers_list = [a.strip() for a in answers_raw.split('\n') if a.strip()]
+                if len(paragraphs_list) != len(answers_list):
+                    messages.error(request, "The number of jumbled words must match the number of answers.")
+                    return render(request, 'typing_game/create_competition.html', get_auth_context(request))
+                
+                for jumbled, answer in zip(paragraphs_list, answers_list):
+                    paragraphs_data.append({'jumbled': jumbled, 'answer': answer})
+            else:
+                for para in paragraphs_list:
+                    paragraphs_data.append({'text': para})
+
+            organizer = Organizer.objects.get(id=organizer_id)
+            Competition.objects.create(
+                title=title,
+                description=description,
+                type=competition_type,
+                paragraphs=paragraphs_data,
+                start_time=start_time,
+                end_time=end_time,
+                organizer=organizer
+            )
+            messages.success(request, f"Competition '{title}' created successfully!")
+            return redirect('typing_game:competitions')
+        except Exception as e:
+            messages.error(request, f"An error occurred while creating the competition: {e}")
             return render(request, 'typing_game/create_competition.html', get_auth_context(request))
-
-        organizer = Organizer.objects.get(id=organizer_id)
-        competition = Competition(
-            title=title,
-            description=description,
-            start_time=start_time,
-            end_time=end_time,
-            organizer=organizer
-        )
-        competition.save()
-        messages.success(request, f"Competition '{title}' created successfully!")
-        return redirect('typing_game:competitions')
 
     return render(request, 'typing_game/create_competition.html', get_auth_context(request))
 
+@organizer_required
+def edit_competition(request, competition_id):
+    """Allows organizers to edit their own competitions."""
+    competition = get_object_or_404(Competition, id=competition_id, organizer_id=request.session.get('user_id'))
+
+    if request.method == 'POST':
+        try:
+            # Update competition fields based on form data
+            competition.title = request.POST.get('title')
+            competition.description = request.POST.get('description')
+            competition.type = request.POST.get('type')
+            competition.start_time = request.POST.get('start_time')
+            competition.end_time = request.POST.get('end_time')
+
+            paragraphs_raw = request.POST.get('paragraphs')
+            paragraphs_list = [p.strip() for p in paragraphs_raw.split('\n\n') if p.strip()]
+
+            competition.paragraphs = [{'text': para} for para in paragraphs_list]
+
+            competition.save()
+            messages.success(request, f"Competition '{competition.title}' updated successfully!")
+            return redirect('typing_game:competitions')
+        except Exception as e:
+            messages.error(request, f"An error occurred while updating the competition: {e}")
+            return render(request, 'typing_game/edit_competition.html', {'competition': competition})
+
+    return render(request, 'typing_game/edit_competition.html', {'competition': competition})
+
+@organizer_required
+def delete_competition(request, competition_id):
+    """Allows organizers to delete their own competitions."""
+    try:
+        competition = Competition.objects.get(id=competition_id, organizer_id=request.session.get('user_id'))
+        competition.delete()
+        messages.success(request, "Competition deleted successfully!")
+    except Competition.DoesNotExist:
+        messages.error(request, "Competition not found or you don't have permission to delete it.")
+    except Exception as e:
+        messages.error(request, f"An error occurred while deleting the competition: {e}")
+    return redirect('typing_game:competitions')
+
+@organizer_required
+def start_competition(request, competition_id):
+    """Allows organizers to start their own competitions."""
+    try:
+        competition = Competition.objects.get(id=competition_id, organizer_id=request.session.get('user_id'))
+        competition.started = True
+        competition.save()
+        messages.success(request, f"Competition '{competition.title}' started successfully!")
+    except Competition.DoesNotExist:
+        messages.error(request, "Competition not found or you don't have permission to start it.")
+    except Exception as e:
+        messages.error(request, f"An error occurred while starting the competition: {e}")
+    return redirect('typing_game:competitions')
 @participant_required
 def join_competition(request, competition_id):
     participant = Participant.objects.get(id=request.session.get('user_id'))
