@@ -99,14 +99,18 @@ Competitions
 						<span class="button disabled">Joined - Waiting to Start</span>
 					{% endif %} 
 
+					<!-- competitions.html - Update the organizer actions section -->
 					{% if user_role == 'organizer' and competition.organizer.id == user_id %}
-						<a href="{% url 'typing_game:edit_competition' competition.id %}" class="button">Edit</a>
-						<a href="{% url 'typing_game:delete_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to delete this competition?');">Delete</a> 
 						{% if not competition.started %}
-							<a href="{% url 'typing_game:start_competition' competition.id %}" class="button">Start Competition</a>
+							<a href="{% url 'typing_game:start_competition' competition.id %}" class="button" onclick="return confirm('Starting will allow participants to join. Continue?');">Start Competition</a>
 						{% else %}
 							<a href="{% url 'typing_game:live_competition' competition.id %}" class="button">View Live</a>
+							{% if competition.is_active %}
+								<span class="button active">Live Now</span>
+							{% endif %}
 						{% endif %}
+						<a href="{% url 'typing_game:edit_competition' competition.id %}" class="button">Edit</a>
+						<a href="{% url 'typing_game:delete_competition' competition.id %}" class="button" onclick="return confirm('Are you sure?');">Delete</a>
 					{% endif %}
 				</div>
 			</div>

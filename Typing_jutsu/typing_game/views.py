@@ -304,21 +304,35 @@ def delete_competition(request, competition_id):
 
 # Update the start_competition view to redirect to live competition
 @organizer_required
-def start_competition(request, competition_id):
-    """Allows organizers to start their own competitions and redirect to live view."""
+def start_competition_now(request, competition_id):
+    """Start competition immediately with a countdown"""
     try:
         competition = Competition.objects.get(id=competition_id, organizer_id=request.session.get('user_id'))
+        
+        # Set competition to start now with a 10-second buffer for countdown
+        competition.start_time = timezone.now() + timedelta(seconds=10)
         competition.started = True
-        competition.start_time = timezone.now()-timedelta(seconds=15)
-        competition.end_time = competition.start_time + timedelta(minutes=competition.duration)
         competition.save()
-        messages.success(request, f"Competition '{competition.title}' started successfully!")
-        return redirect('typing_game:live_competition', competition_id=competition_id)
-    except Competition.DoesNotExist:
-        messages.error(request, "Competition not found or you don't have permission to start it.")
+        
+        return JsonResponse({'success': True})
     except Exception as e:
-        messages.error(request, f"An error occurred while starting the competition: {e}")
-    return redirect('typing_game:competitions')
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@login_required
+def update_competition_status(request, competition_id):
+    """API endpoint to get current competition status"""
+    competition = get_object_or_404(Competition, id=competition_id)
+    
+    # Determine competition status
+    now = timezone.now()
+    if now < competition.start_time:
+        status = 'waiting'
+    elif competition.start_time <= now < competition.end_time:
+        status = 'active'
+    else:
+        status = 'ended'
+    
+    return JsonResponse({'status': status})
 
 @participant_required
 def join_competition(request, competition_id):
@@ -383,7 +397,16 @@ def live_competition(request, competition_id):
         
         # Sort results by score (descending)
         results = sorted(results, key=lambda x: x.score, reverse=True)
-        context['results'] = results
+    context['results'] = results
+    now = timezone.now()
+    if now < competition.start_time:
+        competition.status = 'waiting'
+    elif competition.start_time <= now < competition.end_time:
+        competition.status = 'active'
+    else:
+        competition.status = 'ended'
+    
+    context['competition'] = competition
     
     return render(request, 'typing_game/live_competition.html', context)
 
