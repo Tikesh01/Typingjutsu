@@ -6,6 +6,7 @@ from django.core.validators import validate_email
 from .models import Participant, Organizer, Competition, CompetitionResult
 from .decorators import login_required, participant_required, organizer_required
 from django.utils import timezone
+from datetime import timedelta
 
 
 def get_auth_context(request):
@@ -308,6 +309,8 @@ def start_competition(request, competition_id):
     try:
         competition = Competition.objects.get(id=competition_id, organizer_id=request.session.get('user_id'))
         competition.started = True
+        competition.start_time = timezone.now()-timedelta(seconds=15)
+        competition.end_time = competition.start_time + timedelta(minutes=competition.duration)
         competition.save()
         messages.success(request, f"Competition '{competition.title}' started successfully!")
         return redirect('typing_game:live_competition', competition_id=competition_id)

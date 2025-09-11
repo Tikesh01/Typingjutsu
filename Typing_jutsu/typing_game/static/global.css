@@ -126,8 +126,8 @@ nav ul {
         display: none; /* Firefox */
     }
 
-    #profile .fa-circle-chevron-down {
-        margin-left: 1em;
+    #profile .fa-circle-chevron-right {
+        margin-left: 0.5em;
     }
     #profile[open]{
         summary{

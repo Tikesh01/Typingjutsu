@@ -186,13 +186,16 @@ Live Competition: {{ competition.title }}
         cursor: not-allowed;
         opacity: 0.65;
     }
+    #thePara{
+        color: black;
+    }
 </style>
 
 <div class="competition-container">
     <h1>{{ competition.title }}</h1>
     
     <div class="timer-container">
-        Time Remaining: <span id="timer">00:00:00</span>
+        Time Remaining: <span id="timer">{{competition.duration}}</span>
     </div>
     
     {% if user_role == 'participant' %}
@@ -208,17 +211,12 @@ Live Competition: {{ competition.title }}
                     </div>
                 {% else %}
                     {% for item in competition.paragraphs %}
-                        <p>{{ item.text }}</p>
+                        <p id="thePara">{{ item.text }}</p>
                     {% endfor %}
                 {% endif %}
             </div>
             
-            <textarea 
-                id="typing-input" 
-                class="input-area" 
-                placeholder="Start typing here..." 
-                autofocus
-                {% if competition.type == 'Reverse' %}data-reverse="true"{% endif %}
+            <textarea  id="typing-input" class="input-area" placeholder="Start typing here..." {% if competition.type == 'Reverse' %}data-reverse="true"{% endif %}'
             ></textarea>
             
             <div class="stats-container">
@@ -281,7 +279,7 @@ Live Competition: {{ competition.title }}
 <script>
     // Store competition data in a way that JavaScript can access
     const competitionData = {
-        id: '{{ competition.id }}',
+        id: "{{ competition.id }}",
         type: "{{ competition.type }}",
         timeRemaining: '{{ time_remaining_seconds }}',
         submitUrl: "{% url 'typing_game:submit_result' competition.id %}"
