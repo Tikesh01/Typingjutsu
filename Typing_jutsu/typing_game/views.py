@@ -1,10 +1,12 @@
-from django.shortcuts import render, redirect, get_list_or_404
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from .models import Participant, Organizer, Competition
+from .models import Participant, Organizer, Competition, CompetitionResult
 from .decorators import login_required, participant_required, organizer_required
 from django.utils import timezone
+from datetime import timedelta
 
 
 def get_auth_context(request):
@@ -14,6 +16,7 @@ def get_auth_context(request):
     return {
         'is_authenticated': bool(user_id),
         'user_role': user_role,
+        'user_id' : user_id,
     }
 
 
@@ -179,22 +182,31 @@ def practice(request):
 
 @login_required
 def competitions(request):
-    """
-    Displays a list of competitions.
-    - Organizers can see all competitions and a link to create new ones.
-    - Participants can see upcoming competitions and join them.
-    """
     context = get_auth_context(request)
-    all_competitions = Competition.objects.filter(end_time__gte=timezone.now()).order_by('start_time') # Show started and upcoming
+    user_role = context['user_role']
+    user_id = context['user_id']
 
-    if context['user_role'] == 'participant':
-        user_id = request.session.get('user_id')
+    all_comps = Competition.objects.all().order_by('start_time')
+    # keep only active/upcoming competitions
+    competitions_list = [c for c in all_comps if c.end_time >= timezone.now()]
+
+    if user_role == 'organizer':
+        organizer_comps = Competition.objects.filter(organizer_id=user_id).order_by('start_time')
+        # add organizer's expired ones also
+        competitions_list = list(set(list(competitions_list) + list(organizer_comps)))
+        competitions_list.sort(key=lambda x: x.start_time)
+
+    for comp in competitions_list:
+        # Check if competition is active: started and within time frame
+        comp.is_active = comp.started and comp.start_time <= timezone.now() < comp.end_time
+        comp.expired = True if comp.end_time < timezone.now() else False
+
+    if user_role == 'participant':
         participant = Participant.objects.get(id=user_id)
-        # Annotate each competition with whether the participant has joined
-        for comp in all_competitions:
+        for comp in competitions_list:
             comp.is_joined = comp.participants.filter(id=participant.id).exists()
 
-    context['competitions'] = all_competitions
+    context['competitions'] = competitions_list
     return render(request, 'typing_game/competitions.html', context)
 
 @organizer_required
@@ -207,10 +219,10 @@ def create_competition(request):
             description = request.POST.get('description')
             paragraphs_raw = request.POST.get('paragraphs')
             start_time = request.POST.get('start_time')
-            end_time = request.POST.get('end_time')
+            duration = request.POST.get('duration')
             organizer_id = request.session.get('user_id')
 
-            if not all([title, competition_type, description, start_time, end_time,paragraphs_raw]):
+            if not all([title, competition_type, description, start_time, duration,paragraphs_raw]):
                 messages.error(request, "All fields are required.")
                 return render(request, 'typing_game/create_competition.html', get_auth_context(request))
 
@@ -238,7 +250,7 @@ def create_competition(request):
                 type=competition_type,
                 paragraphs=paragraphs_data,
                 start_time=start_time,
-                end_time=end_time,
+                duration=int(duration),
                 organizer=organizer
             )
             messages.success(request, f"Competition '{title}' created successfully!")
@@ -261,7 +273,7 @@ def edit_competition(request, competition_id):
             competition.description = request.POST.get('description')
             competition.type = request.POST.get('type')
             competition.start_time = request.POST.get('start_time')
-            competition.end_time = request.POST.get('end_time')
+            competition.duration = request.POST.get('duration')            
 
             paragraphs_raw = request.POST.get('paragraphs')
             paragraphs_list = [p.strip() for p in paragraphs_raw.split('\n\n') if p.strip()]
@@ -290,26 +302,131 @@ def delete_competition(request, competition_id):
         messages.error(request, f"An error occurred while deleting the competition: {e}")
     return redirect('typing_game:competitions')
 
+# Update the start_competition view to redirect to live competition
 @organizer_required
 def start_competition(request, competition_id):
-    """Allows organizers to start their own competitions."""
+    """Allows organizers to start their own competitions and redirect to live view."""
     try:
         competition = Competition.objects.get(id=competition_id, organizer_id=request.session.get('user_id'))
         competition.started = True
+        competition.start_time = timezone.now()-timedelta(seconds=15)
+        competition.end_time = competition.start_time + timedelta(minutes=competition.duration)
         competition.save()
         messages.success(request, f"Competition '{competition.title}' started successfully!")
+        return redirect('typing_game:live_competition', competition_id=competition_id)
     except Competition.DoesNotExist:
         messages.error(request, "Competition not found or you don't have permission to start it.")
     except Exception as e:
         messages.error(request, f"An error occurred while starting the competition: {e}")
     return redirect('typing_game:competitions')
+
 @participant_required
 def join_competition(request, competition_id):
     participant = Participant.objects.get(id=request.session.get('user_id'))
     competition = Competition.objects.get(id=competition_id)
-    competition.participants.add(participant)
-    messages.success(request, f"You have successfully joined the '{competition.title}' competition!")
-    return redirect('typing_game:competitions')
+    
+    # Check if the competition has already started
+    if competition.started and competition.start_time <= timezone.now():
+        # Add participant and redirect to live competition
+        competition.participants.add(participant)
+        messages.success(request, f"You have successfully joined the '{competition.title}' competition!")
+        return redirect('typing_game:live_competition', competition_id=competition_id)
+    else:
+        competition.participants.add(participant)
+        messages.success(request, f"You have successfully joined the '{competition.title}' competition! It will start at {competition.start_time}.")
+        return redirect('typing_game:competitions')
+
+
+# Add to views.py
+@login_required
+def live_competition(request, competition_id):
+    """Live competition page with different views for participants and organizers"""
+    competition = get_object_or_404(Competition, id=competition_id)
+    user_role = request.session.get('user_role')
+    user_id = request.session.get('user_id')
+    context = get_auth_context(request)
+    context['competition'] = competition
+    
+    # Check if competition has started
+    if not competition.started and user_role == 'participant':
+        messages.error(request, "This competition hasn't started yet.")
+        return redirect('typing_game:competitions')
+    
+    # Check if competition has expired
+    if competition.end_time < timezone.now():
+        messages.error(request, "This competition has ended.")
+        return redirect('typing_game:competitions')
+    
+    # For participants, check if they've joined
+    if user_role == 'participant':
+        participant = Participant.objects.get(id=user_id)
+        if not competition.participants.filter(id=participant.id).exists():
+            messages.error(request, "You need to join this competition first.")
+            return redirect('typing_game:competitions')
+    
+    # Calculate time remaining
+    time_remaining = competition.end_time - timezone.now()
+    context['time_remaining_seconds'] = max(0, time_remaining.total_seconds())
+    
+    # For organizers, get all results
+    if user_role == 'organizer':
+        # Get all participants who have submitted results
+        results = CompetitionResult.objects.filter(competition=competition).select_related('participant')
+        
+        # Calculate scores based on competition type
+        for result in results:
+            if competition.type in ['Normal', 'Reverse']:
+                result.score = (result.wpm * result.accuracy) / 100
+            elif competition.type == 'Jumble-Word':
+                # For jumble word, use accuracy as primary metric
+                result.score = result.accuracy
+        
+        # Sort results by score (descending)
+        results = sorted(results, key=lambda x: x.score, reverse=True)
+        context['results'] = results
+    
+    return render(request, 'typing_game/live_competition.html', context)
+
+
+@participant_required
+def submit_result(request, competition_id):
+    """Handle submission of typing results from participants"""
+    if request.method == 'POST':
+        try:
+            competition = get_object_or_404(Competition, id=competition_id)
+            participant = Participant.objects.get(id=request.session.get('user_id'))
+            
+            # Check if competition is still active
+            if competition.end_time < timezone.now():
+                return JsonResponse({'error': 'Competition has ended'}, status=400)
+            
+            # Get data from request
+            wpm = float(request.POST.get('wpm', 0))
+            accuracy = float(request.POST.get('accuracy', 0))
+            time_taken = float(request.POST.get('time_taken', 0))
+            total_keystrokes = int(request.POST.get('total_keystrokes', 0))
+            correct_keystrokes = int(request.POST.get('correct_keystrokes', 0))
+            
+            # Create or update result
+            result, created = CompetitionResult.objects.update_or_create(
+                competition=competition,
+                participant=participant,
+                defaults={
+                    'wpm': wpm,
+                    'accuracy': accuracy,
+                    'time_taken': time_taken,
+                    'total_keystrokes': total_keystrokes,
+                    'correct_keystrokes': correct_keystrokes,
+                    'submitted_at': timezone.now()
+                }
+            )
+            
+            return JsonResponse({'success': True, 'message': 'Result submitted successfully'})
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @login_required
 def leaderboard(request):
@@ -328,3 +445,7 @@ def privacy(request):
 def help_view(request):
     """Help page"""
     return render(request, 'typing_game/help.html', get_auth_context(request))
+
+def health_check(request):
+    """Health check endpoint for deployment platforms."""
+    return HttpResponse("OK", status=200)

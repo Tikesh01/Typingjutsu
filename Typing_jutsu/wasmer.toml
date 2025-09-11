@@ -1,0 +1,36 @@
+# wasmer.toml
+
+# The name of your app
+app = "typing-jutsu"
+
+# The owner of the app (your Wasmer username)
+owner = "tikesh01"
+
+# The package to run
+[package]
+
+# The command to run to start the app
+[package.run]
+command = "gunicorn Typing_jutsu.wsgi:application"
+health_check = "/health_check/"
+
+# The command to run to build the app
+[package.build]
+command = "bash build.sh"
+
+# The filesystem mapping
+[package.fs]
+"." = "."
+
+# Environment variables
+[package.env]
+SECRET_KEY = { from = "secret", name = "SECRET_KEY" }
+DATABASE_URL = { from = "service", name = "db", property = "url" }
+WEB_CONCURRENCY = "4"
+PYTHON_VERSION = "3.11.4"
+DEBUG = "False"
+DJANGO_SETTINGS_MODULE = "Typing_jutsu.settings"
+
+# Add a database
+[package.services.db]
+image = "postgres:15"

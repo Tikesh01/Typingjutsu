@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
+from datetime import timedelta
 
 class Participant(models.Model):
     name = models.CharField(max_length=30)
@@ -35,18 +36,45 @@ class Organizer(models.Model):
 
     def __str__(self):
         return f"Organizer: {self.name} ({self.email})"
-    
+
 class Competition(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    duration = models.IntegerField(help_text="Duration in minutes", default=3)
     organizer = models.ForeignKey(Organizer, on_delete=models.CASCADE, related_name='competitions')
     participants = models.ManyToManyField(Participant, related_name='competitions', blank=True)
-    type = models.CharField(max_length=15, choices=[('Normal','normal'), ('Reverse','reverse'), ('Jumble-Word','jumble-Word')], default=None)
+    type = models.CharField(
+        max_length=15,
+        choices=[('Normal','normal'), ('Reverse','reverse'), ('Jumble-Word','jumble-Word')],
+        default=None
+    )
     paragraphs = models.JSONField(default=list) 
     expired = models.BooleanField(default=False)
     started = models.BooleanField(default=False)
-    
+
+    @property
+    def end_time(self):
+        """Calculate end_time dynamically from start_time + duration"""
+        return self.start_time + timedelta(minutes=self.duration)
+
     def __str__(self):
         return self.title
+
+# Add to models.py
+class CompetitionResult(models.Model):
+    competition = models.ForeignKey(Competition, on_delete=models.CASCADE, related_name='results')
+    participant = models.ForeignKey(Participant, on_delete=models.CASCADE, related_name='competition_results')
+    wpm = models.FloatField(default=0.0)
+    accuracy = models.FloatField(default=0.0)
+    time_taken = models.FloatField(default=0.0)  # in seconds
+    total_keystrokes = models.IntegerField(default=0)
+    correct_keystrokes = models.IntegerField(default=0)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'competition_results'
+        unique_together = ('competition', 'participant')
+
+    def __str__(self):
+        return f"{self.participant.name} - {self.competition.title}"

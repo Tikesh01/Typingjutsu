@@ -18,9 +18,14 @@ urlpatterns = [
     path('competitions/delete/<int:competition_id>/', views.delete_competition, name='delete_competition'),
     path('competitions/start/<int:competition_id>/', views.start_competition, name='start_competition'),
     path('leaderboard/', views.leaderboard, name='leaderboard'),
+    path('competition/<int:competition_id>/live/', views.live_competition, name='live_competition'),
+    path('competition/<int:competition_id>/submit/', views.submit_result, name='submit_result'),
     
     # Footer URLs
     path('terms/', views.terms, name='terms'),
     path('privacy/', views.privacy, name='privacy'),
     path('help/', views.help_view, name='help'),
+
+    # Health check for deployment platforms
+    path('health_check/', views.health_check, name='health_check'),
 ]

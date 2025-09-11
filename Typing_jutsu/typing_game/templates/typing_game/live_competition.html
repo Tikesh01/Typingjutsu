@@ -1,0 +1,474 @@
+<!-- templates/typing_game/live_competition.html -->
+{% extends 'typing_game/base.html' %}
+{% load static %}
+
+{% block title %}
+Live Competition: {{ competition.title }}
+{% endblock %}
+
+{% block page %}
+<style>
+    .competition-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .timer-container {
+        background: var(--dark-color);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    
+    .typing-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        padding: 25px;
+        margin-bottom: 20px;
+    }
+    
+    .text-display {
+        font-size: 1.2rem;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 6px;
+        border-left: 4px solid var(--accent-color);
+    }
+    
+    .input-area {
+        width: 100%;
+        min-height: 150px;
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 1.1rem;
+        resize: vertical;
+        margin-bottom: 15px;
+    }
+    
+    .input-area:focus {
+        border-color: var(--accent-color);
+        outline: none;
+    }
+    
+    .stats-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    
+    .stat-box {
+        background: #f5f5f5;
+        padding: 10px 15px;
+        border-radius: 6px;
+        text-align: center;
+        flex: 1;
+        margin: 0 5px;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--accent-color);
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .leaderboard {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        padding: 25px;
+    }
+    
+    .leaderboard-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .leaderboard-table th {
+        background: #f9f9f9;
+        font-weight: 600;
+    }
+    
+    .leaderboard-table tr:hover {
+        background: #f5f5f5;
+    }
+    
+    .rank {
+        font-weight: bold;
+        width: 60px;
+    }
+    
+    .participant-name {
+        font-weight: 500;
+    }
+    
+    .score {
+        font-weight: bold;
+        color: var(--accent-color);
+    }
+    
+    .controls {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 20px;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary {
+        background: var(--accent-color);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: var(--accent-dark);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    
+    .finished-message {
+        text-align: center;
+        padding: 30px;
+        background: #f9f9f9;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+    
+    .jumble-container {
+        margin-bottom: 20px;
+    }
+    
+    .jumble-word {
+        display: inline-block;
+        background: #f0f0f0;
+        padding: 8px 15px;
+        margin: 5px;
+        border-radius: 4px;
+        font-size: 1.1rem;
+    }
+    
+    .button.disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.65;
+    }
+    #thePara{
+        color: black;
+    }
+</style>
+
+<div class="competition-container">
+    <h1>{{ competition.title }}</h1>
+    
+    <div class="timer-container">
+        Time Remaining: <span id="timer">{{competition.duration}}</span>
+    </div>
+    
+    {% if user_role == 'participant' %}
+        <!-- Participant View -->
+        <div class="typing-container">
+            <div class="text-display" id="text-display">
+                {% if competition.type == 'Jumble-Word' %}
+                    <div class="jumble-container">
+                        <h3>Unscramble these words:</h3>
+                        {% for item in competition.paragraphs %}
+                            <span class="jumble-word" data-answer="{{ item.answer }}">{{ item.jumbled }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {% for item in competition.paragraphs %}
+                        <p id="thePara">{{ item.text }}</p>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <textarea  id="typing-input" class="input-area" placeholder="Start typing here..." {% if competition.type == 'Reverse' %}data-reverse="true"{% endif %}'
+            ></textarea>
+            
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-value" id="wpm">0</div>
+                    <div class="stat-label">WPM</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="accuracy">100%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="time">0s</div>
+                    <div class="stat-label">Time</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="reset-btn" class="btn btn-secondary">Reset</button>
+                <button id="submit-btn" class="btn btn-primary">Submit</button>
+            </div>
+        </div>
+        
+    {% else %}
+        <!-- Organizer View -->
+        <div class="leaderboard">
+            <h2>Live Leaderboard</h2>
+            
+            {% if results %}
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th class="rank">Rank</th>
+                            <th class="participant-name">Participant</th>
+                            <th>WPM</th>
+                            <th>Accuracy</th>
+                            <th class="score">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                            <tr>
+                                <td class="rank">{{ forloop.counter }}</td>
+                                <td class="participant-name">{{ result.participant.name }}</td>
+                                <td>{{ result.wpm|floatformat:1 }}</td>
+                                <td>{{ result.accuracy|floatformat:1 }}%</td>
+                                <td class="score">{{ result.score|floatformat:2 }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="finished-message">No submissions yet. Waiting for participants to submit their results.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Store Django variables in JavaScript-friendly format -->
+<script>
+    // Store competition data in a way that JavaScript can access
+    const competitionData = {
+        id: "{{ competition.id }}",
+        type: "{{ competition.type }}",
+        timeRemaining: '{{ time_remaining_seconds }}',
+        submitUrl: "{% url 'typing_game:submit_result' competition.id %}"
+    };
+    
+    // Store CSRF token for AJAX requests
+    const csrfToken = "{{ csrf_token }}";
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const timeRemaining = competitionData.timeRemaining;
+        const competitionId = competitionData.id;
+        const competitionType = competitionData.type;
+        const submitUrl = competitionData.submitUrl;
+        
+        // Timer functionality
+        const timerElement = document.getElementById('timer');
+        let timeLeft = timeRemaining;
+        
+        function updateTimer() {
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timerElement.textContent = "00:00:00";
+                if (document.getElementById('typing-input')) {
+                    document.getElementById('typing-input').disabled = true;
+                    document.getElementById('submit-btn').disabled = true;
+                    alert("Time's up! Your results have been submitted automatically.");
+                    submitResults();
+                }
+                return;
+            }
+            
+            const hours = Math.floor(timeLeft / 3600);
+            const minutes = Math.floor((timeLeft % 3600) / 60);
+            const seconds = Math.floor(timeLeft % 60);
+            
+            timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timeLeft--;
+        }
+        
+        const timerInterval = setInterval(updateTimer, 1000);
+        updateTimer();
+        
+        // Typing test functionality for participants
+        '{% if user_role == "{{participant}}" %}'
+            const typingInput = document.getElementById('typing-input');
+            const wpmElement = document.getElementById('wpm');
+            const accuracyElement = document.getElementById('accuracy');
+            const timeElement = document.getElementById('time');
+            const resetBtn = document.getElementById('reset-btn');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            let startTime = null;
+            let timerIntervalTyping = null;
+            let elapsedTime = 0;
+            let totalKeystrokes = 0;
+            let correctKeystrokes = 0;
+            let isCompleted = false;
+            
+            // Get the original text based on competition type
+            let originalText = '';
+            if (competitionType === 'Jumble-Word') {
+                // For jumble word, we need the answers
+                const jumbleWords = document.querySelectorAll('.jumble-word');
+                originalText = Array.from(jumbleWords).map(word => word.dataset.answer).join(' ');
+            } else {
+                originalText = document.getElementById('text-display').textContent.trim();
+            }
+            
+            // For reverse competition, we need to reverse the text
+            if (competitionType === 'Reverse') {
+                originalText = originalText.split('').reverse().join('');
+            }
+            
+            typingInput.addEventListener('input', function() {
+                if (!startTime) {
+                    startTime = new Date();
+                    // Start the typing timer
+                    timerIntervalTyping = setInterval(updateTypingStats, 100);
+                }
+                
+                const typedText = typingInput.value;
+                totalKeystrokes++;
+                
+                // Check accuracy
+                if (typedText === originalText.substring(0, typedText.length)) {
+                    correctKeystrokes++;
+                }
+                
+                // Update stats
+                updateTypingStats();
+                
+                // Check if completed
+                if (typedText === originalText) {
+                    isCompleted = true;
+                    clearInterval(timerIntervalTyping);
+                    submitResults();
+                }
+            });
+            
+            resetBtn.addEventListener('click', function() {
+                typingInput.value = '';
+                startTime = null;
+                elapsedTime = 0;
+                totalKeystrokes = 0;
+                correctKeystrokes = 0;
+                isCompleted = false;
+                clearInterval(timerIntervalTyping);
+                
+                wpmElement.textContent = '0';
+                accuracyElement.textContent = '100%';
+                timeElement.textContent = '0s';
+            });
+            
+            submitBtn.addEventListener('click', function() {
+                if (!isCompleted) {
+                    if (confirm("Are you sure you want to submit? You haven't completed the text yet.")) {
+                        submitResults();
+                    }
+                } else {
+                    submitResults();
+                }
+            });
+            
+            function updateTypingStats() {
+                if (startTime) {
+                    const currentTime = new Date();
+                    elapsedTime = (currentTime - startTime) / 1000; // in seconds
+                    
+                    // Calculate WPM (Words Per Minute)
+                    // Assuming 5 characters per word
+                    const words = typingInput.value.length / 5;
+                    const minutes = elapsedTime / 60;
+                    const wpm = minutes > 0 ? words / minutes : 0;
+                    
+                    // Calculate accuracy
+                    const accuracy = totalKeystrokes > 0 ? (correctKeystrokes / totalKeystrokes) * 100 : 100;
+                    
+                    // Update UI
+                    wpmElement.textContent = Math.round(wpm);
+                    accuracyElement.textContent = Math.round(accuracy) + '%';
+                    timeElement.textContent = Math.round(elapsedTime) + 's';
+                }
+            }
+            
+            function submitResults() {
+                clearInterval(timerIntervalTyping);
+                
+                const wpm = parseFloat(wpmElement.textContent);
+                const accuracy = parseFloat(accuracyElement.textContent);
+                
+                // Send results to server
+                fetch(submitUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: new URLSearchParams({
+                        'wpm': wpm,
+                        'accuracy': accuracy,
+                        'time_taken': elapsedTime,
+                        'total_keystrokes': totalKeystrokes,
+                        'correct_keystrokes': correctKeystrokes
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Your results have been submitted successfully!');
+                        typingInput.disabled = true;
+                        submitBtn.disabled = true;
+                    } else {
+                        alert('Error submitting results: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while submitting your results.');
+                });
+            }
+            
+            // Auto-submit when time runs out
+            if (timeRemaining <= 0) {
+                typingInput.disabled = true;
+                submitBtn.disabled = true;
+            }
+        "{% endif %}"
+    });
+</script>
+{% endblock %}
