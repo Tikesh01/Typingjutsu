@@ -447,5 +447,5 @@ def help_view(request):
     return render(request, 'typing_game/help.html', get_auth_context(request))
 
 def health_check(request):
-    """Health check endpoint for Render."""
+    """Health check endpoint for deployment platforms."""
     return HttpResponse("OK", status=200)

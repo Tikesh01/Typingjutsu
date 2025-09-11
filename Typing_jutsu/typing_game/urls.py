@@ -25,4 +25,7 @@ urlpatterns = [
     path('terms/', views.terms, name='terms'),
     path('privacy/', views.privacy, name='privacy'),
     path('help/', views.help_view, name='help'),
+
+    # Health check for deployment platforms
+    path('health_check/', views.health_check, name='health_check'),
 ]
