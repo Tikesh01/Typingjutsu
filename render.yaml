@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: typingjutsu-django
+    env: python
+    plan: free
+    buildCommand: cd Typing_jutsu && ./build.sh
+    startCommand: cd Typing_jutsu && gunicorn Typing_jutsu.wsgi:application --bind 0.0.0.0:10000
+    branch: main
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: Typing_jutsu.settings
