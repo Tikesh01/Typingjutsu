@@ -4,7 +4,5 @@ set -o errexit
 
 pip install -r requirements.txt
 
-cd Typing_jutsu
-
-python manage.py collectstatic --no-input
-python manage.py migrate
+python Typing_jutsu/manage.py collectstatic --no-input
+python Typing_jutsu/manage.py migrate
