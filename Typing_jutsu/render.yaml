@@ -10,7 +10,7 @@ services:
     runtime: python
     plan: free
     buildCommand: "./build.sh"
-    startCommand: "gunicorn Typing_jutsu.wsgi:application --chdir Typing_jutsu"
+    startCommand: gunicorn Typing_jutsu.wsgi:application
     envVars:
       - key: DATABASE_URL
         fromDatabase:
