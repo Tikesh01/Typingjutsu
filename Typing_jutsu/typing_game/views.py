@@ -197,13 +197,13 @@ def competitions(request):
 
     for comp in competitions_list:
         # Check if competition is active: started and within time frame
-        comp.is_active = comp.started and comp.start_time <= timezone.now() and comp.end_time > timezone.now()
+        comp.is_active = comp.started and comp.start_time <= timezone.now() < comp.end_time
+        comp.expired = True if comp.end_time < timezone.now() else False
 
     if user_role == 'participant':
         participant = Participant.objects.get(id=user_id)
         for comp in competitions_list:
             comp.is_joined = comp.participants.filter(id=participant.id).exists()
-            comp.is_expired = comp.end_time < timezone.now()
 
     context['competitions'] = competitions_list
     return render(request, 'typing_game/competitions.html', context)

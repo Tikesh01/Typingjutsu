@@ -55,6 +55,22 @@ Competitions
 		font-size: 0.75rem;
 		font-weight: bold;
 	}
+	.competition-card.expired {
+		border-left: 5px solid #ef4444; /* Red color for expired */
+		position: relative;
+	}
+	.competition-card.expired::before {
+		content: 'Expired';
+		position: absolute;
+		top: 10px;
+		left: 10px;
+		background-color: #ef4444;
+		color: white;
+		padding: 2px 8px;
+		border-radius: 12px;
+		font-size: 0.75rem;
+		font-weight: bold;
+	}
 </style>
 
 <div class="page-header">
@@ -66,7 +82,11 @@ Competitions
 
 <div class="competition-grid">
 	{% for competition in competitions %}
-		<div class="competition-card {% if not competition.started %}not-started{% endif %}">
+		<div class="competition-card 
+			{% if competition.expired %}expired
+			{% elif not competition.started %}not-started
+			{% endif %}"
+		>
 			<div class="competition-card-header">
 				<h2>{{ competition.title }}</h2>
 				<div class="competition-card-actions">
