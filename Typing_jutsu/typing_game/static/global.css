@@ -129,7 +129,13 @@ nav ul {
     #profile .fa-circle-chevron-down {
         margin-left: 1em;
     }
-
+    #profile[open]{
+        summary{
+            i{
+                transform: rotate(90deg);
+            }
+        }
+    }
     #profile[open] .profile-details {
         position: absolute;
         background-color: var(--gray-800);
@@ -140,6 +146,7 @@ nav ul {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         z-index: 10;
         min-width: 150px;
+
     }
 
     .profile-details p {
@@ -368,62 +375,10 @@ h1 {
     justify-content: center;
     gap: 1rem;
 }
-
-/* Typing game specific styles */
-.typing-area {
-    background-color: var(--gray-800);
-    padding: 2rem;
-    border-radius: 1rem;
-    margin: 2rem 0;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.typing-text {
-    font-size: 1.25rem;
-    line-height: 2;
-    margin-bottom: 1rem;
-}
-
-.typing-input {
-    width: 100%;
-    padding: 1rem;
-    background-color: var(--gray-700);
-    border: 2px solid var(--accent-color);
-    border-radius: 0.5rem;
-    color: var(--text-color);
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
-}
-
-.typing-input:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3);
-}
-
-/* Stats and metrics */
-.stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin: 2rem 0;
-}
-
-.stat-card {
-    background-color: var(--gray-800);
-    padding: 1.5rem;
-    border-radius: 0.75rem;
-    text-align: center;
-}
-
-.stat-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--accent-color);
-}
-
-.stat-label {
-    color: var(--gray-100);
-    font-size: 0.875rem;
+.button.disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.65;
 }
 
 /* Competition cards */
