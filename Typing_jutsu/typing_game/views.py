@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
@@ -443,3 +443,6 @@ def help_view(request):
     """Help page"""
     return render(request, 'typing_game/help.html', get_auth_context(request))
 
+def health_check(request):
+    """Health check endpoint for Render."""
+    return HttpResponse("OK", status=200)
