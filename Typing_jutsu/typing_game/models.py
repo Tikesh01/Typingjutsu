@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
 from datetime import timedelta
+from django.utils import timezone
 
 class Participant(models.Model):
     name = models.CharField(max_length=30)
@@ -52,11 +53,15 @@ class Competition(models.Model):
     paragraphs = models.JSONField(default=list) 
     expired = models.BooleanField(default=False)
     started = models.BooleanField(default=False)
+    status = models.CharField(choices=[('waiting','Waiting'),('active','Active'), ( 'ended','Ended')], default='waiting')
 
     @property
     def end_time(self):
         """Calculate end_time dynamically from start_time + duration"""
         return self.start_time + timedelta(minutes=self.duration)
+    
+    # In models.py, add to Competition class
+    
 
     def __str__(self):
         return self.title
