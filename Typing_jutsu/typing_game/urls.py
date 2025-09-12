@@ -19,6 +19,7 @@ urlpatterns = [
     path('competitions/delete/<int:competition_id>/', views.delete_competition, name='delete_competition'),
     path('competitions/activate/<int:competition_id>/', views.activate_competition, name='activate_competition'),
     path('competitions/join/<int:competition_id>/', views.join_competition, name='join_competition'),
+    path('competitions/live/<int:competition_id>/', views.live_competition, name='live_competition'),
     path('leaderboard/',views.leaderboard, name='leaderboard'),
     # Footer URLs
     path('terms/', views.terms, name='terms'),

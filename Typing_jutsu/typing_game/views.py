@@ -322,7 +322,14 @@ def join_competition(request, competition_id):
     competition.save()
 
     messages.success(request, f"You have successfully joined the competition '{competition.title}'!")
-    return redirect('typing_game:competitions')
+    return redirect('typing_game:live_competition') 
+
+@login_required
+@participant_required
+def live_competition(request):
+    context = get_auth_context(request)
+    
+    return render(request, 'typing_game/live_competition', context)
 
 @login_required
 def leaderboard(request):
