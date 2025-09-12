@@ -138,7 +138,7 @@
         status: "{{ competition.status }}",
         startTime: "{{ competition.start_time.isoformat }}",
         endTime: "{{ competition.end_time.isoformat }}",
-        timeRemaining: {{ competition.end_time|date:'U' }} - {% now "U" %},
+        timeRemaining: "{{ competition.end_time|date:'U' }}" - "{% now 'U' %}",
     };
     const userRole = "{{ user_role }}";
     const csrfToken = "{{ csrf_token }}";

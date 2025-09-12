@@ -49,7 +49,7 @@ Competition
     }
     .button-info{
         border-radius: 20px;
-        padding: 0.2em;
+        padding: 0.2em 0.5em;
         background: rgb(153, 80, 221);
     }
 </style>
@@ -84,6 +84,7 @@ Competition
                 <p><strong>Start Time: </strong>{{competition.start_time}}</p>
                 <p><strong>End Time: </strong>{{competition.end_time}}</p>
                 <p><strong>Duration: </strong>{{competition.duration}} minute(s)</p>
+                <p><strong>Type: </strong>{{competition.type}}</p>
             </div>
         </div>
     {%empty%}
