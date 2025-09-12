@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const countdownNumber = document.getElementById('countdown-number');
     const typingContainer = document.getElementById('typing-container');
     const startNowBtn = document.getElementById('start-now-btn');
+    const stopCompetitionBtn = document.getElementById('stop-competition-btn');
+    const restartCompetitionBtn = document.getElementById('restart-competition-btn');
     
     // Competition state
     let timeLeft = competitionData.timeRemaining;
@@ -19,7 +21,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let isCompleted = false;
     let repeatCount = 0;
     let originalText = '';
-    
+    let currentWpm = 0;
+    let currentAccuracy = 100;
+    let resultsUpdateInterval;
+    let participantPosition = 0;
+    let allResults = [];
+
     // Initialize based on user role
     if (userRole === 'participant') {
         initParticipantView();
@@ -30,6 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Start the main timer
     startTimer();
     
+    // Start periodic results updates
+    startResultsUpdates();
+
     function initParticipantView() {
         // Only initialize if competition is active
         if (competitionStatus !== 'active') return;
@@ -40,7 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const timeElement = document.getElementById('time');
         const repeatsElement = document.getElementById('repeats');
         const resetBtn = document.getElementById('reset-btn');
-        const submitBtn = document.getElementById('submit-btn');
         
         // Get the original text based on competition type
         if (competitionData.type === 'Jumble-Word') {
@@ -121,20 +130,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.repeat-indicator').forEach(el => el.remove());
         });
         
-        submitBtn.addEventListener('click', function() {
-            if (!isCompleted && competitionData.type === 'Jumble-Word') {
-                if (confirm("Are you sure you want to submit? You haven't completed the text yet.")) {
-                    submitResults();
-                }
-            } else {
-                submitResults();
-            }
-        });
-        
         // Auto-submit when time runs out
         if (timeLeft <= 0) {
             typingInput.disabled = true;
-            submitBtn.disabled = true;
             submitResults();
         }
     }
@@ -143,6 +141,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (startNowBtn) {
             startNowBtn.addEventListener('click', function() {
                 startCompetitionNow();
+            });
+        }
+        
+        if (stopCompetitionBtn) {
+            stopCompetitionBtn.addEventListener('click', function() {
+                stopCompetition();
+            });
+        }
+        
+        if (restartCompetitionBtn) {
+            restartCompetitionBtn.addEventListener('click', function() {
+                restartCompetition();
             });
         }
     }
@@ -162,17 +172,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Submit results for participants
                 if (userRole === 'participant') {
                     const typingInput = document.getElementById('typing-input');
-                    const submitBtn = document.getElementById('submit-btn');
                     
                     if (typingInput) {
                         typingInput.disabled = true;
                     }
                     
-                    if (submitBtn) {
-                        submitBtn.disabled = true;
-                    }
-                    
                     submitResults();
+                    
+                    // Show final results
+                    showFinalResults();
                 }
                 
                 return;
@@ -231,14 +239,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Calculate WPM
             const words = (totalKeystrokes / 5) + (repeatCount * (originalText.length / 5));
             const minutes = elapsedTime / 60;
-            const wpm = minutes > 0 ? words / minutes : 0;
+            currentWpm = minutes > 0 ? words / minutes : 0;
             
             // Calculate accuracy
-            const accuracy = totalKeystrokes > 0 ? (correctKeystrokes / totalKeystrokes) * 100 : 100;
+            currentAccuracy = totalKeystrokes > 0 ? (correctKeystrokes / totalKeystrokes) * 100 : 100;
             
             // Update UI
-            document.getElementById('wpm').textContent = Math.round(wpm);
-            document.getElementById('accuracy').textContent = Math.round(accuracy) + '%';
+            document.getElementById('wpm').textContent = Math.round(currentWpm);
+            document.getElementById('accuracy').textContent = Math.round(currentAccuracy) + '%';
             document.getElementById('time').textContent = Math.round(elapsedTime) + 's';
         }
     }
@@ -268,9 +276,6 @@ document.addEventListener('DOMContentLoaded', function() {
             clearInterval(timerIntervalTyping);
         }
         
-        const wpm = parseFloat(document.getElementById('wpm').textContent);
-        const accuracy = parseFloat(document.getElementById('accuracy').textContent);
-        
         fetch(competitionData.submitUrl, {
             method: 'POST',
             headers: {
@@ -278,8 +283,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-CSRFToken': csrfToken
             },
             body: new URLSearchParams({
-                'wpm': wpm,
-                'accuracy': accuracy,
+                'wpm': currentWpm,
+                'accuracy': currentAccuracy,
                 'time_taken': elapsedTime,
                 'total_keystrokes': totalKeystrokes,
                 'correct_keystrokes': correctKeystrokes,
@@ -296,6 +301,50 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error:', error);
+        });
+    }
+    
+    function showFinalResults() {
+        // Fetch final results
+        fetch(competitionData.getResultsUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update UI with final results
+                document.getElementById('final-wpm').textContent = Math.round(currentWpm);
+                document.getElementById('final-accuracy').textContent = Math.round(currentAccuracy) + '%';
+                
+                // Find participant position
+                const sortedResults = data.results.sort((a, b) => b.wpm - a.wpm);
+                const position = sortedResults.findIndex(r => r.participant_id == userId) + 1;
+                document.getElementById('final-position').textContent = position;
+                
+                // Populate results table
+                const resultsBody = document.getElementById('results-body');
+                resultsBody.innerHTML = '';
+                
+                sortedResults.forEach((result, index) => {
+                    const row = document.createElement('tr');
+                    if (result.participant_id == userId) {
+                        row.style.fontWeight = 'bold';
+                    }
+                    
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${result.participant_name}</td>
+                        <td>${Math.round(result.wpm)}</td>
+                        <td>${Math.round(result.accuracy)}%</td>
+                    `;
+                    
+                    resultsBody.appendChild(row);
+                });
+                
+                // Render final racetrack
+                renderMiniRacetrack(sortedResults, true);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching results:', error);
         });
     }
     
@@ -319,6 +368,155 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error:', error);
             alert('An error occurred while starting the competition.');
         });
+    }
+    
+    function stopCompetition() {
+        if (confirm('Are you sure you want to stop the competition? All participants will be notified.')) {
+            fetch(competitionData.stopCompetitionUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to reflect changes
+                    location.reload();
+                } else {
+                    alert('Error stopping competition: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while stopping the competition.');
+            });
+        }
+    }
+    
+    function restartCompetition() {
+        if (confirm('Are you sure you want to restart the competition? All current results will be cleared.')) {
+            fetch(competitionData.restartCompetitionUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to reflect changes
+                    location.reload();
+                } else {
+                    alert('Error restarting competition: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while restarting the competition.');
+            });
+        }
+    }
+    
+    function startResultsUpdates() {
+        // Update results immediately
+        updateResults();
+        
+        // Set up periodic updates
+        resultsUpdateInterval = setInterval(updateResults, 3000);
+    }
+    
+    function updateResults() {
+        fetch(competitionData.getResultsUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                allResults = data.results;
+                
+                if (userRole === 'organizer') {
+                    renderRacetrack(allResults);
+                    updateLeaderboard(allResults);
+                } else if (userRole === 'participant' && competitionStatus === 'active') {
+                    renderMiniRacetrack(allResults);
+                    updateParticipantPosition(allResults);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching results:', error);
+        });
+    }
+    
+    function renderRacetrack(results) {
+        const racetrack = document.getElementById('racetrack');
+        racetrack.innerHTML = '';
+        
+        // Sort results by WPM
+        const sortedResults = results.sort((a, b) => b.wpm - a.wpm);
+        const maxWpm = sortedResults.length > 0 ? Math.max(...sortedResults.map(r => r.wpm)) : 1;
+        
+        sortedResults.forEach((result, index) => {
+            const positionPercentage = maxWpm > 0 ? (result.wpm / maxWpm) * 85 : 0;
+            
+            const racer = document.createElement('div');
+            racer.className = 'racer';
+            racer.style.left = `${positionPercentage}%`;
+            racer.style.top = `${20 + (index % 5) * 35}px`;
+            racer.style.backgroundColor = index === 0 ? '#ffc107' : '#007bff';
+            
+            const name = document.createElement('div');
+            name.className = 'racer-name';
+            name.textContent = result.participant_name;
+            
+            const wpm = document.createElement('div');
+            wpm.className = 'racer-wpm';
+            wpm.textContent = `${Math.round(result.wpm)} WPM`;
+            
+            racer.appendChild(name);
+            racer.appendChild(wpm);
+            racetrack.appendChild(racer);
+        });
+    }
+    
+    function renderMiniRacetrack(results, isFinal = false) {
+        const racetrackElement = isFinal ? 
+            document.getElementById('final-racetrack') : 
+            document.getElementById('mini-racetrack');
+            
+        racetrackElement.innerHTML = '';
+        
+        // Sort results by WPM and take top 5
+        const sortedResults = results.sort((a, b) => b.wpm - a.wpm).slice(0, 5);
+        const maxWpm = sortedResults.length > 0 ? Math.max(...sortedResults.map(r => r.wpm)) : 1;
+        
+        sortedResults.forEach((result, index) => {
+            const positionPercentage = maxWpm > 0 ? (result.wpm / maxWpm) * 85 : 0;
+            
+            const racer = document.createElement('div');
+            racer.className = 'mini-racer';
+            if (result.participant_id == userId) {
+                racer.classList.add('current');
+            }
+            racer.style.left = `${positionPercentage}%`;
+            racer.style.top = `${20 + index * 15}px`;
+            
+            racetrackElement.appendChild(racer);
+        });
+    }
+    
+    function updateParticipantPosition(results) {
+        const sortedResults = results.sort((a, b) => b.wpm - a.wpm);
+        const position = sortedResults.findIndex(r => r.participant_id == userId) + 1;
+        
+        if (position > 0) {
+            document.getElementById('participant-position').textContent = `Your position: ${position} / ${results.length}`;
+            participantPosition = position;
+        }
+    }
+    
+    function updateLeaderboard(results) {
+        // This would update the leaderboard table if needed
+        // Implementation depends on your specific requirements
     }
     
     // Periodically update competition status

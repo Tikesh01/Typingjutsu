@@ -1,128 +1,93 @@
-{% extends 'typing_game/base.html' %} 
+{% extends 'typing_game/base.html' %}
 
-{% block title %} 
-Competitions 
-{% endblock %} 
+{% block title %}
+Competition
+{% endblock %}
 
 {% block page %}
 <style>
-	.page-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin: 2rem 0;
-	}
-	.competition-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 1.5rem;
-	}
-	.competition-card-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-		margin-top: 1em;
-	}
-	.competition-card-actions {
+    .page-header{
         display: flex;
-		gap: 2em;
+        justify-content: space-between;
+        align-items: center;
+        margin: 1em 0;
     }
-	.competition-card-header h3 {
-		margin-bottom: 0.5rem;
-	}
-	.competition-card p {
-		margin-bottom: 0.8rem;
-		color: var(--gray-100);
-		line-height: 1.6;
-	}
-	.competition-card .meta {
-		font-size: 0.875rem;
-		color: var(--accent-color);
-	}
-	.competition-card.not-started {
-		border-left: 5px solid var(--accent-color);
-		position: relative;
-	}
-	.competition-card.not-started::before {
-		content: 'Not Started';
-		position: absolute;
-		top: 10px;
-		left: 10px;
-		background-color: var(--accent-color);
-		color: var(--background-color);
-		padding: 2px 8px;
-		border-radius: 12px;
-		font-size: 0.75rem;
-		font-weight: bold;
-	}
-	.competition-card.expired {
-		border-left: 5px solid #ef4444; /* Red color for expired */
-		position: relative;
-	}
-	.competition-card.expired::before {
-		content: 'Expired';
-		position: absolute;
-		top: 10px;
-		left: 10px;
-		background-color: #ef4444;
-		color: white;
-		padding: 2px 8px;
-		border-radius: 12px;
-		font-size: 0.75rem;
-		font-weight: bold;
-	}
-</style>
+    .competition_list_container{
+        display: flex;
+        flex-direction: column;
+        gap: 2em;
+        background-color: rgba(0, 0, 255, 0.047);
+        padding: 1em;
 
+        .each_competition{
+            border: 1px solid gray;
+            border-radius: 10px;
+            padding: 1em;
+            background: rgba(0, 0, 0, 0.301);
+            #competition_header{
+                margin: 0.3em 0;
+                border-bottom: 1px solid whitesmoke;
+                padding-bottom: 0.5em;
+                .actions{
+                    width: 40%;
+                    display: flex;
+                    justify-content: space-between;
+                }
+            }
+            .each_comp_more_detail{
+                display: flex;
+                flex-direction: column;
+                gap: 1em;
+                margin-top: 1em;
+                #description{
+                    max-height: 5em;
+                    overflow: auto;
+                }
+            }
+        }
+
+    }
+    .button-info{
+        border-radius: 20px;
+        padding: 0.2em;
+        background: rgb(153, 80, 221);
+    }
+</style>
 <div class="page-header">
-	<h1>Competitions</h1>
-	{% if user_role == 'organizer' %}
-		<a href="{% url 'typing_game:create_competition' %}" class="button">Organize Competition</a>
-	{% endif %}
+    <h1>Competitions</h1>
+    <a href="{% url 'typing_game:create_competition' %}" class="button">Create Competition</a>
 </div>
 
-<div class="competition-grid">
-	{% for competition in competitions %}
-		<div class="competition-card 
-			{% if competition.expired %}expired
-			{% elif not competition.started %}not-started
-			{% endif %}"
-		>
-			<div class="competition-card-header">
-				<h2>{{ competition.title }}</h2>
-				<div class="competition-card-actions">
-					<!-- Update the button in competitions.html -->
-					{% if user_role == 'participant' and not competition.is_joined %}
-						<a href="{% url 'typing_game:join_competition' competition.id %}" class="button">Join</a>
-					{% elif user_role == 'participant' and competition.is_joined and competition.started %}
-						<a href="{% url 'typing_game:live_competition' competition.id %}" class="button">Enter Competition</a>
-					{% elif user_role == 'participant' and competition.is_joined and not competition.started %}
-						<span class="button disabled">Joined - Waiting to Start</span>
-					{% endif %} 
-
-					<!-- competitions.html - Update the organizer actions section -->
-					{% if user_role == 'organizer' and competition.organizer.id == user_id %}
-						{% if not competition.started %}
-							<a href="{% url 'typing_game:start_competition' competition.id %}" class="button" onclick="return confirm('Starting will allow participants to join. Continue?');">Start Competition</a>
-						{% else %}
-							<a href="{% url 'typing_game:live_competition' competition.id %}" class="button">View Live</a>
-							{% if competition.is_active %}
-								<span class="button active">Live Now</span>
-							{% endif %}
-						{% endif %}
-						<a href="{% url 'typing_game:edit_competition' competition.id %}" class="button">Edit</a>
-						<a href="{% url 'typing_game:delete_competition' competition.id %}" class="button" onclick="return confirm('Are you sure?');">Delete</a>
-					{% endif %}
-				</div>
-			</div>
-			
-			<p>{{ competition.description }}</p>
-			<p class="meta">Starts: {{ competition.start_time|date:"F d, Y P" }}</p> 
-			<p class="meta">Ends: {{ competition.end_time|date:"F d, Y P" }}</p>
-			<p class="meta">Duration: {{competition.duration}}</p>
-			<p class="meta">Organizer: {{ competition.organizer.name }}</p>
-		</div>
-	{% empty %}
-		<p>No competitions available at the moment. Check back soon!</p>
-	{% endfor %}
+<div class="competition_list_container">
+    {% for competition in competitions %}
+        <div class="each_competition">
+            <div id="competition_header" class="page-header">
+                <h2>{{competition.title}}</h2>
+                {% if competition.organizer.id == profile_user.id and user_role == 'organizer' %}
+                    <div class="actions"> 
+                        <a href="{% url 'typing_game:edit_competition' competition.id %}" class="button">Edit</a>
+                        <a href="{% url 'typing_game:delete_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to delete ')">Delete</a>
+                        <a href="{% url 'typing_game:activate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to Activate')">Activate</a>
+                    </div>
+                {% else %}
+                    {% if competition.status == 'active' %}
+                        <a href="{% url 'typing_game:join_competition' }" class="button" onclick="return confirm('Are you sure you want to Join')">join</a>
+                    {% elif competition.started %}
+                        <span class="button-info">Competition is started</span>
+                    {%else%}
+                        <span class="button-info">Competition Not activated yet</span>
+                    {%endif%}
+                {% endif %}
+            </div>
+            <div class="each_comp_more_detail">
+                <p id="description"><strong></strong>{{competition.description}}</p>
+                <p><strong>Start Time: </strong>{{competition.start_time}}</p>
+                <p><strong>End Time: </strong>{{competition.end_time}}</p>
+                <p><strong>Duration: </strong>{{competition.duration}} minute(s)</p>
+            </div>
+        </div>
+    {%empty%}
+        <h3>No Competitions Available right Now</h3>
+    {% endfor %}
 </div>
 {% endblock %}

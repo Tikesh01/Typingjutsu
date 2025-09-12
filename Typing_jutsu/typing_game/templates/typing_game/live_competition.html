@@ -1,216 +1,147 @@
-<!-- live_competition.html - Major updates needed -->
-{% extends 'typing_game/base.html' %}
+<!-- live_competition.html -->
+{% extends 'typing_game/base.html' %} 
 {% load static %}
 
 {% block title %}Live Competition: {{ competition.title }}{% endblock %}
 
 {% block page %}
 <style>
-    /* Add these styles to your existing CSS */
-    .countdown-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
+    .page-header{
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
-        z-index: 1000;
+        margin: 1em 0;
     }
-    
-    .countdown-box {
-        background: white;
-        padding: 2rem;
-        border-radius: 10px;
-        text-align: center;
+    .status-waiting { color: #ffc107; }
+    .status-active { color: #28a745; }
+    .status-ended { color: #dc3545; }
+
+    .organizer-view, .participant-view {
+        background: rgba(0,0,0,0.2);
+        padding: 2em;
+        border-radius: 8px;
     }
-    
-    .countdown-number {
-        font-size: 5rem;
-        font-weight: bold;
-        color: var(--accent-color);
-    }
-    
-    .competition-status {
-        padding: 10px;
+
+    .racetrack {
+        position: relative;
+        height: 200px;
+        background: #333;
         border-radius: 5px;
-        margin-bottom: 15px;
+        overflow: hidden;
+        margin-bottom: 2em;
+    }
+
+    .typing-area {
+        background: #222;
+        padding: 1em;
+        border-radius: 5px;
+    }
+
+    #text-display {
+        font-size: 1.2em;
+        line-height: 1.6;
+        margin-bottom: 1em;
+        color: #ddd;
+    }
+
+    #typing-input {
+        width: 100%;
+        padding: 0.5em;
+        font-size: 1.1em;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 1em;
+        margin-top: 1em;
         text-align: center;
-        font-weight: bold;
     }
-    
-    .status-waiting {
-        background-color: #fff3cd;
-        color: #856404;
-    }
-    
-    .status-active {
-        background-color: #d4edda;
-        color: #155724;
-    }
-    
-    .status-ended {
-        background-color: #f8d7da;
-        color: #721c24;
-    }
-    
-    .text-display {
-        max-height: 300px;
-        overflow-y: auto;
-    }
-    
-    .repeat-indicator {
-        background-color: #e9ecef;
-        padding: 5px 10px;
-        border-radius: 4px;
-        font-size: 0.9rem;
-        margin-top: 10px;
-        display: inline-block;
-    }
+
 </style>
-
-<div class="competition-container">
-    <h1>{{ competition.title }}</h1>
-    
-    <div class="competition-status" id="competition-status">
-        {% if competition.status == 'waiting' %}
-            <div class="status-waiting">Waiting to start... Participants can join</div>
-        {% elif competition.status == 'active' %}
-            <div class="status-active">Competition in progress</div>
-        {% elif competition.status == 'ended' %}
-            <div class="status-ended">Competition ended</div>
-        {% endif %}
+<div class="page-header">
+    <h1>{{competition.title}} Live</h1>
+    <div id="competition-status" class="status-{{ competition.status }}">
+        Status: {{ competition.get_status_display }}
     </div>
-    
-    <div class="timer-container">
-        Time Remaining: <span id="timer">00:00:00</span>
-    </div>
-    
-    {% if user_role == 'participant' %}
-        <!-- Participant View -->
-        <div class="typing-container" id="typing-container">
-            {% if competition.status == 'waiting' %}
-                <div class="finished-message">
-                    <p>The competition will start soon. Please wait...</p>
-                </div>
-            {% elif competition.status == 'active' %}
-                <div class="text-display" id="text-display">
-                    {% if competition.type == 'Jumble-Word' %}
-                        <div class="jumble-container">
-                            <h3>Unscramble these words:</h3>
-                            {% for item in competition.paragraphs %}
-                                <span class="jumble-word" data-answer="{{ item.answer }}">{{ item.jumbled }}</span>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        {% for item in competition.paragraphs %}
-                            <p id="thePara">{{ item.text }}</p>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                
-                <textarea id="typing-input" class="input-area" placeholder="Start typing here..." 
-                          {% if competition.type == 'Reverse' %}data-reverse="true"{% endif %}></textarea>
-                
-                <div class="stats-container">
-                    <div class="stat-box">
-                        <div class="stat-value" id="wpm">0</div>
-                        <div class="stat-label">WPM</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="accuracy">100%</div>
-                        <div class="stat-label">Accuracy</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="time">0s</div>
-                        <div class="stat-label">Time</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="repeats">0</div>
-                        <div class="stat-label">Repeats</div>
-                    </div>
-                </div>
-                
-                <div class="controls">
-                    <button id="reset-btn" class="btn btn-secondary">Reset</button>
-                    <button id="submit-btn" class="btn btn-primary">Submit</button>
-                </div>
-            {% elif competition.status == 'ended' %}
-                <div class="finished-message">
-                    <p>The competition has ended. Thank you for participating!</p>
-                    <p>Your final results have been submitted.</p>
-                </div>
-            {% endif %}
-        </div>
-    {% else %}
-        <!-- Organizer View -->
-        <div class="leaderboard">
-            <h2>Live Leaderboard</h2>
-            
-            {% if results %}
-                <table class="leaderboard-table">
-                    <thead>
-                        <tr>
-                            <th class="rank">Rank</th>
-                            <th class="participant-name">Participant</th>
-                            <th>WPM</th>
-                            <th>Accuracy</th>
-                            <th class="score">Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for result in results %}
-                            <tr>
-                                <td class="rank">{{ forloop.counter }}</td>
-                                <td class="participant-name">{{ result.participant.name }}</td>
-                                <td>{{ result.wpm|floatformat:1 }}</td>
-                                <td>{{ result.accuracy|floatformat:1 }}%</td>
-                                <td class="score">{{ result.score|floatformat:2 }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p class="finished-message">No submissions yet. Waiting for participants to submit their results.</p>
-            {% endif %}
-        </div>
-        
-        {% if competition.status == 'waiting' %}
-            <div class="controls" style="margin-top: 20px;">
-                <button id="start-now-btn" class="btn btn-primary">Start Competition Now</button>
-            </div>
-        {% endif %}
-    {% endif %}
+    <div id="timer">--:--:--</div>
 </div>
 
-<!-- Countdown overlay -->
-<div id="countdown-overlay" class="countdown-overlay" style="display: none;">
-    <div class="countdown-box">
-        <div class="countdown-number" id="countdown-number">3</div>
-        <p>Competition starting in...</p>
+{# ================================= #}
+{#      ORGANIZER-SPECIFIC VIEW      #}
+{# ================================= #}
+{% if user_role == 'organizer' %}
+<div class="organizer-view">
+    <h2>Organizer Dashboard</h2>
+    <p>Monitor the competition in real-time.</p>
+
+    <h3>Live Racetrack</h3>
+    <div id="racetrack" class="racetrack">
+        <!-- Racers will be dynamically added here by JavaScript -->
+    </div>
+
+    <h3>Live Leaderboard</h3>
+    <table class="leaderboard-table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Participant</th>
+                <th>WPM</th>
+                <th>Accuracy</th>
+            </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+            {% for result in results %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ result.participant.name }}</td>
+                <td>{{ result.wpm|floatformat:0 }}</td>
+                <td>{{ result.accuracy|floatformat:0 }}%</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">No results yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{# =================================== #}
+{#      PARTICIPANT-SPECIFIC VIEW      #}
+{# =================================== #}
+{% if user_role == 'participant' %}
+<div class="participant-view">
+    <h2>Get Ready to Type!</h2>
+
+    <div class="typing-area">
+        <div id="text-display">
+            {% for para in competition.paragraphs %}
+                <p>{{ para.text }}</p>
+            {% endfor %}
+        </div>
+        <textarea id="typing-input" rows="5" placeholder="Start typing here when the competition begins..."></textarea>
+    </div>
+
+    <div class="stats-grid">
+        <div><h3>WPM</h3><p id="wpm">0</p></div>
+        <div><h3>Accuracy</h3><p id="accuracy">100%</p></div>
+        <div><h3>Time</h3><p id="time">0s</p></div>
+        <div><h3>Your Rank</h3><p id="rank">N/A</p></div>
     </div>
 </div>
+{% endif %}
 
 <script>
-    // Store competition data
+    // Pass data from Django to JavaScript
     const competitionData = {
         id: "{{ competition.id }}",
-        type: "{{ competition.type }}",
         status: "{{ competition.status }}",
-        duration: parseInt("{{ competition.duration }}") * 60, // Convert to seconds
-        timeRemaining: parseInt("{{ time_remaining_seconds }}"),
-        startTime: "{{ competition.start_time|date:'c' }}",
-        endTime: "{{ competition.end_time|date:'c' }}",
-        submitUrl: "{% url 'typing_game:submit_result' competition.id %}",
-        startNowUrl: "{% url 'typing_game:start_competition_now' competition.id %}",
-        updateStatusUrl: "{% url 'typing_game:update_competition_status' competition.id %}"
+        startTime: "{{ competition.start_time.isoformat }}",
+        endTime: "{{ competition.end_time.isoformat }}",
+        timeRemaining: {{ competition.end_time|date:'U' }} - {% now "U" %},
     };
-    
-    const csrfToken = "{{ csrf_token }}";
     const userRole = "{{ user_role }}";
+    const csrfToken = "{{ csrf_token }}";
 </script>
-
 <script src="{% static 'typing_game/js/live_competition.js' %}"></script>
 {% endblock %}
