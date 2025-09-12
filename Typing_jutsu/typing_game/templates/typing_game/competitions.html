@@ -71,7 +71,7 @@ Competition
                     </div>
                 {% else %}
                     {% if competition.status == 'active' %}
-                        <a href="{% url 'typing_game:join_competition' }" class="button" onclick="return confirm('Are you sure you want to Join')">join</a>
+                        <a href="{% url 'typing_game:join_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to Join')">join</a>
                     {% elif competition.started %}
                         <span class="button-info">Competition is started</span>
                     {%else%}
