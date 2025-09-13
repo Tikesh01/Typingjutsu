@@ -352,7 +352,7 @@ def health_check(request):
     """Health check endpoint for deployment platforms."""
     return HttpResponse("OK", status=200)
 
-# joi
+# join
 @login_required
 def join_competition(request, competition_id):
     """Allows participants to join an active competition."""
@@ -367,7 +367,8 @@ def join_competition(request, competition_id):
     participant = get_object_or_404(Participant, id=participant_id)
     competition.participants.add(participant)
     competition.save()
+    
     context['competition'] = competition
-    context['joind_participant'] = list(competition.participants)
+    context['joined_participants'] = competition.participants.all()
     messages.success(request, f"You have successfully joined the competition '{competition.title}'!")
-    return render(request, 'typing_game/live_competition.html',context)
+    return render(request, 'typing_game/live_competition.html', context)
