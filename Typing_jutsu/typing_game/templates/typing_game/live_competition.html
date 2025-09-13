@@ -22,7 +22,7 @@
         background-color: rgba(0, 0, 0, 0.227);
         padding: 1em;
     }
-    .uploaded_para{
+    #uploaded_para{
         border: 0.5px gainsboro solid;
         border-radius: 10px;
         padding: 0.8em 2em;
@@ -41,7 +41,6 @@
     }
     #duration{
        color: orange;
-       font-weight: normal;
     }
     .type-para{
         padding: 1em;
@@ -100,12 +99,12 @@
         <div class="race-track">
             Typing not started yet
         </div>
-        <h2 id="para-header">
-            <span>Uploaded Paragraph </span> 
+        <div id="para-header">
+            <h2>Uploaded Paragraph </h2> 
             <span id="duration">{{competition.duration}} minute(s)</span> 
             <span>{{competition.type}} typing</span>
-        </h2>
-        <div class="uploaded_para">
+        </div>
+        <div id="uploaded_para" >
             {% for para in competition.paragraphs %}
                 {{ para.text }}
             {%empty%}
@@ -113,13 +112,25 @@
             {%endfor%}
         </div>
         <div class="type-para">
-            <label for="TypingPara">Type the Paragraph here</label>
-            {% if competition.started %}
-                <textarea name="TypingPara" id="TypingPara" placeholder="Start typing here" rows="1"></textarea>
+            <label for="TypingArea">Type the Paragraph here</label>
+            <!-- {% if competition.started %}
+                <textarea name="TypingArea" id="TypingArea" placeholder="Start typing here" rows="1" oninput="check_word()"></textarea>
             {% else %}
-                <textarea name="TypingPara" id="TypingPara" placeholder="Wait for the organizer to start the competition..." rows="1" disabled></textarea>
-            {%endif%}
+                <textarea name="TypingArea" id="TypingArea" placeholder="Wait for the organizer to start the competition..." rows="1" disabled></textarea>
+            {%endif%} -->
+            <textarea name="TypingArea" id="TypingArea" placeholder="Start typing here" rows="1" oninput="check_word()"></textarea>
         </div>
     </div>
 {%endif%}
+<script>
+    function check_word(){
+        const textarea = document.getElementById('TypingArea')
+        const para_container = document.getElementById('uploaded_para')
+        const paragraph = para_container.textContent.trim().split(" ")
+        const typed = textarea.value
+        console.log(paragraph)
+        console.log(typed)
+
+    }
+</script>
 {% endblock %}
