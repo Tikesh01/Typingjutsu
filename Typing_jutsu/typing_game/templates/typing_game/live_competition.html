@@ -79,6 +79,7 @@
         {% else %}
             <a href="#" class="button primary" onclick="return confirm('Are you sure you want to start the competition?')">Start Competition</a>
         {%endif%}
+        <a href="{% url 'typing_game:deactivate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to deactivate this competition?')">Deactivate</a>
     {%endif%}
 </div>
 

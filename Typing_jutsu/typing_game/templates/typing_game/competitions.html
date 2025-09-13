@@ -60,7 +60,6 @@ Competition
 </style>
 <div class="page-header">
     <h1>Competitions</h1>
-
     <a href="{% url 'typing_game:create_competition' %}" class="button">Create Competition</a>
 </div>
 
@@ -73,7 +72,11 @@ Competition
                     <div class="actions"> 
                         <a href="{% url 'typing_game:edit_competition' competition.id %}" class="button">Edit</a>
                         <a href="{% url 'typing_game:delete_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to delete ')">Delete</a>
-                        <a href="{% url 'typing_game:activate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to Activate')">Activate</a>
+                        {% if competition.status == 'active' %}
+                            <a href="{% url 'typing_game:deactivate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to deactivate this competition?')">Deactivate</a>
+                        {% else %}
+                            <a href="{% url 'typing_game:activate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to activate this competition?')">Activate</a>
+                        {% endif %}
                     </div>
                 {% else %}
                     {% if competition.status == 'active' %}

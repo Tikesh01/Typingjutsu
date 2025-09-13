@@ -303,14 +303,33 @@ def activate_competition(request,competition_id):
     competition.save()
     
     context['competition'] = competition
+    context['joined_participants'] = competition.participants.all()
     
     return render(request, 'typing_game/live_competition.html', context)
+
+@organizer_required
+def deactivate_competition(request, competition_id):
+    """Allows organizers to deactivate their own active competitions."""
+    try:
+        competition = Competition.objects.get(id=competition_id, organizer_id=request.session.get('user_id'))
+        competition.status = 'waiting'
+        competition.participants.all().delete()
+        competition.save()
+        messages.success(request, f"Competition '{competition.title}' has been deactivated.")
+    except Competition.DoesNotExist:
+        messages.error(request, "Competition not found or you don't have permission to modify it.")
+    except Exception as e:
+        messages.error(request, f"An error occurred: {e}")
+    return redirect('typing_game:competitions')
 
 @login_required
 def live_competition(request,competition_id):
     context = get_auth_context(request)
-    
-    return render(request, 'typing_game/live_competition', context)
+    competition = get_object_or_404(Competition, id=competition_id)
+    context['competition'] = competition
+    context['joined_participants'] = competition.participants.all()
+
+    return render(request, 'typing_game/live_competition.html', context)
 
 @login_required
 def leaderboard(request):

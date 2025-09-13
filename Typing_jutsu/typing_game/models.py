@@ -5,8 +5,8 @@ from django.utils import timezone
 
 class Participant(models.Model):
     name = models.CharField(max_length=30)
-    password = models.CharField(max_length=128, unique=True)
-    created_At = models.DateTimeField(auto_now=True)
+    password = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
         db_table = 'participants'
 
@@ -44,16 +44,15 @@ class Competition(models.Model):
     start_time = models.DateTimeField()
     duration = models.IntegerField(help_text="Duration in minutes", default=3)
     organizer = models.ForeignKey(Organizer, on_delete=models.CASCADE, related_name='competitions')
-    participants = models.ManyToManyField(Participant, related_name='competitions', blank=True)
+    participants = models.ManyToManyField(Participant, related_name='competitions',)
     type = models.CharField(
         max_length=15,
-        choices=[('Normal','normal'), ('Reverse','reverse'), ('Jumble-Word','jumble-Word')],
-        default=None
+        choices=[('Normal','normal'), ('Reverse','reverse'), ('Jumble-Word','jumble-word')],
     )
     paragraphs = models.JSONField(default=list) 
     expired = models.BooleanField(default=False)
     started = models.BooleanField(default=False)
-    status = models.CharField(choices=[('waiting','Waiting'),('active','Active'), ( 'ended','Ended')], default='waiting')
+    status = models.CharField(max_length=10, choices=[('waiting', 'Waiting'), ('active','Active'), ( 'ended','Ended')], default='waiting')
 
     @property
     def end_time(self):
