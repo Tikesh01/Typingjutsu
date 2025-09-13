@@ -15,10 +15,12 @@
 </style>
 <div class="page-header">
     <h1>{{competition.title}} is live</h1>
-    {%if competition.started %}
-        <a href="#" class="button" onclick="return confirm('Sure You want to Restart')" >Retart Competition</a>
-    {% else %}
-        <a href="#" class="button" onclick="return confirm('Sure You want to Start')">Start Competition</a>
-     {%endif%}
+    {% if competition.oraganizer.id == user.id  and user_role == 'organizer' %}
+        {%if competition.started %}
+            <a href="#" class="button" onclick="return confirm('Sure You want to Restart')" >Retart Competition</a>
+        {% else %}
+            <a href="#" class="button" onclick="return confirm('Sure You want to Start')">Start Competition</a>
+        {%endif%}
+    {%endif%}
 </div>
 {% endblock %}
