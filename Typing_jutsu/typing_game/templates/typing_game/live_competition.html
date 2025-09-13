@@ -180,7 +180,7 @@
             {%if competition.started %}
                 <a href="#" class="button danger" onclick="return confirm('Are you sure you want to restart the competition?')" >Restart Competition</a>
             {% else %}
-                 <a href="{% url 'typing_game:start_competition' competition.id %}" class="button primary" onclick="return confirm('Are you sure you want to start the competition?')">Start Competition</a>
+                <a href="{% url 'typing_game:start_competition' competition.id %}" class="button primary" onclick="return confirm('Are you sure you want to start the competition?')">Start Competition</a>
             {%endif%}
         {%endif%}
         <span id="expand-btn" class="button" onclick="toggleExpand('container')"><i class="fas fa-expand"></i></span>
@@ -218,7 +218,7 @@
         <div class="race-track-container">
             <div class="race-track">
                 <span>🏁</span>
-                <div id="racer-icon">🏎️</div>
+                <div id="racer-icon"><img src="{% static 'images/bike.png' %}" alt=""></div>
                 <span>🏆</span>
             </div>
         </div>
@@ -235,25 +235,27 @@
         </div>
         <div id="text-display" >
             {% for para in competition.paragraphs %}
-                <p>{{ para.text|safe }}</p>
+                {{ para.text }}
             {%empty%}
                 <p>No paragraph uploaded</p>
             {%endfor%}
         </div>
         <div class="type-para">
             <label for="typing-input">Type the Paragraph here</label>
-            <textarea name="typing-input" id="typing-input" placeholder="Wait for the competition to start..." rows="1" oninput="checkInput(event)" disabled></textarea>
+            <textarea name="typing-input" id="typing-input" placeholder="Wait for the competition to start..." rows="1" oninput="checkInput()" disabled></textarea>
         </div>
-        <div id="submission-section" style="display: none; margin-top: 1em; text-align: center;">
-            <p>Competition has ended! Submit your final score.</p>
-            <form id="result-form" method="post" action="{% url 'typing_game:submit_result' competition.id %}">
-                {% csrf_token %}
-                <input type="hidden" name="wpm" id="form-wpm">
-                <input type="hidden" name="accuracy" id="form-accuracy">
-                <input type="hidden" name="time_taken" id="form-time-taken">
-                <button type="submit" class="button primary">Submit Result</button>
-            </form>
-        </div>
+        {%if competition.status == 'ended' %}
+            <div id="submission-section" style="display: none; margin-top: 1em; text-align: center;">
+                <p>Competition has ended! Submit your final score.</p>
+                <form id="result-form" method="post" action="{% url 'typing_game:submit_result' competition.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="wpm" id="form-wpm">
+                    <input type="hidden" name="accuracy" id="form-accuracy">
+                    <input type="hidden" name="time_taken" id="form-time-taken">
+                    <button type="submit" class="button primary">Submit Result</button>
+                </form>
+            </div>
+        {%endif%}
     </div>
 {%endif%}
 <div id="countdown-overlay">
@@ -320,10 +322,8 @@
 
     if (textDisplay) {
         // Wrap each word in a span to control it individually
-        // Use innerText to preserve line breaks as '\n'
-        const originalText = textDisplay.innerText.trim();
-        // Split by space or newline, but keep the newlines in the array
-        words = originalText.split(/(\s+)/).filter(w => w.length > 0);
+        const originalText = textDisplay.textContent.trim();
+        words = originalText.split(/\s+/);
         textDisplay.innerHTML = words.map(word => `<span>${word}</span>`).join(' ');
     }
 
@@ -332,7 +332,7 @@
     let competitionTimerInterval;
 
     // --- Competition State ---
-    const competitionStarted = {{ competition.started|yesno:"true,false" }};
+    const competitionStarted = {{ competition.started|yesno:'true,false' }};
     const competitionStartTime = new Date("{{ competition.start_time.isoformat }}");
     const competitionDuration = {{ competition.duration }} * 60; // in seconds
 
@@ -373,7 +373,7 @@
         }, 1000);
     }
 
-    function checkInput(event) {
+    function checkInput() {
         // This is the typing timer for WPM, not the main competition timer
         if (!startTime && typingInput.value.length > 0 && !typingInput.disabled) {
             startTime = new Date();
@@ -385,9 +385,7 @@
         const wordSpans = textDisplay.querySelectorAll('span');
 
         // When space is pressed, it means the user is moving to the next word
-        const isWordEnd = typedValue.endsWith(' ');
-        const isNewline = event && event.key === 'Enter' && currentWord && currentWord.includes('\n');
-        if (isWordEnd || isNewline) {
+        if (typedValue.endsWith(' ')) {
             const typedWord = typedValue.trim();
 
             // Don't do anything if the user just presses space
@@ -396,13 +394,9 @@
                 return;
             }
 
-            if (isNewline) {
-                totalCharsTyped += 1; // Count the enter key
-            } else {
-                totalCharsTyped += typedWord.length + 1; // +1 for the space
-            }
+            totalCharsTyped += typedWord.length + 1; // +1 for the space
 
-            if (isNewline || typedWord === currentWord) {
+            if (typedWord === currentWord) {
                 correctWords++;
                 wordSpans[currentWordIndex].classList.add('correct-word');
             } else {
@@ -447,7 +441,7 @@
             }
             const minutes = Math.floor(timeLeft / 60);
             const seconds = Math.floor(timeLeft % 60);
-            timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} / {{competition.duration}} minute(s)`;
+            timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/${competition.duration} minute(s)`;
             timeLeft--;
         }, 1000);
     }
@@ -473,6 +467,7 @@
 
         // This is for WPM calculation, not the main timer display
         const elapsedTime = (new Date() - startTime) / 1000;
+        // timeElement.textContent = `${Math.round(elapsedTime)}s`; // We now use the main timer
 
         // WPM is based on a standard of 5 characters per word (including space)
         const wpm = (totalCharsTyped / 5) / (elapsedTime / 60);
