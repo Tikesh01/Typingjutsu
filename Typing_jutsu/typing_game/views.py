@@ -355,9 +355,9 @@ def health_check(request):
 
 # join
 @login_required
-@participant_required
 def join_competition(request, competition_id):
     """Allows participants to join an active competition."""
+    context = get_auth_context(request)
     participant_id = request.session.get('user_id')
     competition = get_object_or_404(Competition, id=competition_id)
 
@@ -368,6 +368,8 @@ def join_competition(request, competition_id):
     participant = get_object_or_404(Participant, id=participant_id)
     competition.participants.add(participant)
     competition.save()
-
+    context['competition'] = competition
+    context['participant'] = participant
+    
     messages.success(request, f"You have successfully joined the competition '{competition.title}'!")
-    return redirect('typing_game:competitions')
+    return render(request, 'typing_game/live_competition.html',context)

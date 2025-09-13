@@ -5,8 +5,20 @@
 {% block title %}Live Competition: {{ competition.title }}{% endblock %}
 
 {% block page %}
+<style>
+    .page-header{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 1em 0;
+    }
+</style>
 <div class="page-header">
     <h1>{{competition.title}} is live</h1>
-    <a href="#" class="button">Restart</a>
+    {%if competition.started %}
+        <a href="#" class="button" onclick="return confirm('Sure You want to Restart')" >Retart Competition</a>
+    {% else %}
+        <a href="#" class="button" onclick="return confirm('Sure You want to Start')">Start Competition</a>
+     {%endif%}
 </div>
 {% endblock %}
