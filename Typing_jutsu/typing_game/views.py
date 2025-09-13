@@ -313,7 +313,7 @@ def deactivate_competition(request, competition_id):
     try:
         competition = Competition.objects.get(id=competition_id, organizer_id=request.session.get('user_id'))
         competition.status = 'waiting'
-        competition.participants.all().delete()
+        competition.participants.clear()
         competition.save()
         messages.success(request, f"Competition '{competition.title}' has been deactivated.")
     except Competition.DoesNotExist:

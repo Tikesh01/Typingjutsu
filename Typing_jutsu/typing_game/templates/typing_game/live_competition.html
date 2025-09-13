@@ -16,13 +16,55 @@
     .page-header h1 {
         margin: 0.8em 0;
     }
+    .correct-word {
+        color: #a5d6a7; /* Light green */
+    }
+    .incorrect-word {
+        background-color: #ef9a9a40; /* Light red background */
+    }
+    .race-track-container {
+        margin: 0.2em 0;
+        padding: 1em 1.5em;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+    }
+    .race-track {
+        position: relative;
+        width: 100%;
+        height: 40px;
+        background: linear-gradient(to right, #374151, #4b5563);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1em;
+        font-size: 1.5em;
+    }
+    #racer-icon {
+        position: absolute;
+        left: 0%; /* Start at 0% */
+        transform: translateX(-50%);
+        transition: left 0.3s linear;
+        font-size: 1.2em;
+    }
        
-    .race-track{
+    .performance{
         margin-bottom: 1em;
         background-color: rgba(0, 0, 0, 0.227);
-        padding: 1em;
+        padding: 1em 6em;
+        display: flex;
+        justify-content: space-between;
+        .stat-box{
+            display: flex;
+            gap: 1em;
+            text-align: center;
+            h4{
+                margin-bottom: 0.5em;
+                color: orange;
+            }
+        }
     }
-    #uploaded_para{
+    #text-display{
         border: 0.5px gainsboro solid;
         border-radius: 10px;
         padding: 0.8em 2em;
@@ -38,6 +80,10 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+    }
+    .half-header{
+        display: flex;
+        gap: 2em;
     }
     #duration{
        color: orange;
@@ -70,22 +116,54 @@
         list-style-type: none;
         padding: 0;
     }
+    .participant-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1em;
+        margin-top: 1em;
+    }
+    .participant-list li {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.6em 1em;
+        display: flex;
+        align-items: center;
+        gap: 0.8em;
+        font-size: 1.1em;
+        counter-increment: participant-counter;
+    }
+    .participant-list li::before {
+        content: counter(participant-counter);
+        background-color: #007bff;
+        color: white;
+        border-radius: 50%;
+        width: 2em;
+        height: 2em;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
 </style>
 <div class="page-header">
     <h1>{{competition.title}} is live</h1>
-    {% if competition.organizer.id == user_id and user_role == 'organizer' %}
-        {%if competition.started %}
-            <a href="#" class="button danger" onclick="return confirm('Are you sure you want to restart the competition?')" >Restart Competition</a>
-        {% else %}
-            <a href="#" class="button primary" onclick="return confirm('Are you sure you want to start the competition?')">Start Competition</a>
+    <div class="half-header">
+        {% if competition.organizer.id == user_id and user_role == 'organizer' %}
+            <a href="{% url 'typing_game:deactivate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to deactivate this competition?')">Deactivate</a>
+            {%if competition.started %}
+                <a href="#" class="button danger" onclick="return confirm('Are you sure you want to restart the competition?')" >Restart Competition</a>
+            {% else %}
+                <a href="#" class="button primary" onclick="return confirm('Are you sure you want to start the competition?')">Start Competition</a>
+            {%endif%}
         {%endif%}
-        <a href="{% url 'typing_game:deactivate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to deactivate this competition?')">Deactivate</a>
-    {%endif%}
+        <span id="expand-btn" class="button" onclick="toggleExpand('container')"><i class="fas fa-expand"></i></span>
+    </div>
 </div>
 
 {% if competition.organizer.id == user_id and user_role == 'organizer' %}
     <div class="container">
-        <h2>Participants</h2>
+        <h2 class="section-header">Joined Participants ({{ joined_participants.count }})</h2>
         <ul class="participant-list">
             {% for participant in joined_participants %}
                 <li><strong>{{ participant.name }}</strong></li>
@@ -96,16 +174,37 @@
     </div>
 {%else%}
     <div class="container">
-        <h2>Your Performance</h2> 
-        <div class="race-track">
-            Typing not started yet
+        <h2 class="section-header">Your Performance</h2> 
+        <div class="performance">
+            <div class="stat-box">
+                <h4>WPM:</h4>
+                <p id="wpm">0</p>
+            </div>
+            <div class="stat-box">
+                <h4>Accuracy:</h4>
+                <p id="accuracy">100%</p>
+            </div>
+            <div class="stat-box">
+                <h4>Time:</h4>
+                <p id="time">0s</p>
+            </div>
         </div>
+        <div class="race-track-container">
+            <div class="race-track">
+                <span>🏁</span>
+                <div id="racer-icon"><img src="{% static 'images/bike.png' %}" alt=""></div>
+                <span>🏆</span>
+            </div>
+        </div>
+
         <div id="para-header">
             <h2>Uploaded Paragraph </h2> 
-            <span id="duration">{{competition.duration}} minute(s)</span> 
-            <span>{{competition.type}} typing</span>
+            <div class="half-header">
+                <span id="duration">{{competition.duration}} minute(s)</span> 
+                <span>{{competition.type}} typing</span>
+            </div>
         </div>
-        <div id="uploaded_para" >
+        <div id="text-display" >
             {% for para in competition.paragraphs %}
                 {{ para.text }}
             {%empty%}
@@ -113,25 +212,146 @@
             {%endfor%}
         </div>
         <div class="type-para">
-            <label for="TypingArea">Type the Paragraph here</label>
-            <!-- {% if competition.started %}
-                <textarea name="TypingArea" id="TypingArea" placeholder="Start typing here" rows="1" oninput="check_word()"></textarea>
-            {% else %}
-                <textarea name="TypingArea" id="TypingArea" placeholder="Wait for the organizer to start the competition..." rows="1" disabled></textarea>
-            {%endif%} -->
-            <textarea name="TypingArea" id="TypingArea" placeholder="Start typing here" rows="1" oninput="check_word()"></textarea>
+            <label for="typing-input">Type the Paragraph here</label>
+            <textarea name="typing-input" id="typing-input" placeholder="Start typing here..." rows="1" oninput="checkInput()"></textarea>
         </div>
     </div>
 {%endif%}
 <script>
-    function check_word(){
-        const textarea = document.getElementById('TypingArea')
-        const para_container = document.getElementById('uploaded_para')
-        const paragraph = para_container.textContent.trim().split(" ")
-        const typed = textarea.value
-        console.log(paragraph)
-        console.log(typed)
+    function toggleExpand(containerClass) {
+        const container = document.querySelector('.' + containerClass);
+        const expandBtn = document.getElementById('expand-btn');
+        const expandBtnIcon = expandBtn.querySelector('i');
 
+        if (container.classList.contains('expanded')) {
+            // Collapse the container
+            expandBtn.style.position = '';
+            container.classList.remove('expanded');
+            container.style.position = '';
+            container.style.top = '';
+            container.style.left = '';
+            container.style.transform = '';
+            container.style.width = '';
+            container.style.height = '';
+            container.style.background = '';
+            container.style.padding = '';
+            expandBtnIcon.className = 'fas fa-expand';
+        } else {
+            // Expand the container
+            expandBtn.style.position = 'fixed';
+            container.classList.add('expanded');
+            container.style.position = 'fixed';
+            container.style.top = '50%';
+            container.style.left = '50%';
+            container.style.transform = 'translate(-50%, -50%)';
+            container.style.width = '100vw';
+            container.style.height = '100vh';
+            container.style.padding = '3em 12em'
+            container.style.background = 'var(--background-color)'; // Use theme background
+            expandBtn.style.zIndex = '1001';
+            expandBtnIcon.className = 'fas fa-compress';
+        }
+    }
+    // --- Real-time Typing Calculation ---
+    const typingInput = document.getElementById('typing-input');
+    const textDisplay = document.getElementById('text-display');
+    const wpmElement = document.getElementById('wpm');
+    const accuracyElement = document.getElementById('accuracy');
+    const timeElement = document.getElementById('time');
+    const racerIcon = document.getElementById('racer-icon');
+
+    let words = [];
+    let currentWordIndex = 0;
+    let correctWords = 0;
+    let totalCharsTyped = 0;
+
+    if (textDisplay) {
+        // Wrap each word in a span to control it individually
+        const originalText = textDisplay.textContent.trim();
+        words = originalText.split(/\s+/);
+        textDisplay.innerHTML = words.map(word => `<span>${word}</span>`).join(' ');
+    }
+
+    let startTime;
+    let timerInterval;
+
+    function checkInput() {
+        if (!startTime && typingInput.value.length > 0) {
+            startTime = new Date();
+            timerInterval = setInterval(updateStats, 1000); // Update stats every second
+        }
+
+        const typedValue = typingInput.value;
+        const currentWord = words[currentWordIndex];
+        const wordSpans = textDisplay.querySelectorAll('span');
+
+        // When space is pressed, it means the user is moving to the next word
+        if (typedValue.endsWith(' ')) {
+            const typedWord = typedValue.trim();
+
+            // Don't do anything if the user just presses space
+            if (typedWord === '') {
+                typingInput.value = '';
+                return;
+            }
+
+            totalCharsTyped += typedWord.length + 1; // +1 for the space
+
+            if (typedWord === currentWord) {
+                correctWords++;
+                wordSpans[currentWordIndex].classList.add('correct-word');
+            } else {
+                wordSpans[currentWordIndex].classList.add('incorrect-word');
+            }
+
+            // Check if the paragraph is completed
+            if (currentWordIndex + 1 === words.length) {
+                // Reset to re-type
+                currentWordIndex = -1; // Will be incremented to 0
+                setTimeout(() => {
+                    wordSpans.forEach(span => span.className = '');
+                }, 200); // Small delay to let user see the last word's color
+            }
+
+            currentWordIndex++;
+            typingInput.value = ''; // Clear the textarea for the next word
+
+            // Remove the red background from the next word if it had one
+            if (wordSpans[currentWordIndex]) {
+                wordSpans[currentWordIndex].classList.remove('incorrect-word');
+            }
+
+        } else {
+            // Check the current word being typed for correctness in real-time
+            if (currentWord && currentWord.startsWith(typedValue)) {
+                typingInput.classList.remove('incorrect-word');
+            } else {
+                typingInput.classList.add('incorrect-word');
+            }
+        }
+
+        updateStats();
+    }
+
+    function updateStats() {
+        if (!startTime) return;
+
+        const elapsedTime = (new Date() - startTime) / 1000; // in seconds
+        timeElement.textContent = `${Math.round(elapsedTime)}s`;
+
+        // WPM is based on a standard of 5 characters per word (including space)
+        const wpm = (totalCharsTyped / 5) / (elapsedTime / 60);
+        wpmElement.textContent = elapsedTime > 0 ? Math.round(wpm) : 0;
+
+        // Accuracy is based on correctly typed words vs total words attempted
+        const accuracy = currentWordIndex > 0 ? (correctWords / currentWordIndex) * 100 : 100;
+        accuracyElement.textContent = `${Math.round(accuracy)}%`;
+
+        // Update racer position
+        if (racerIcon && words.length > 0) {
+            const progress = (currentWordIndex / words.length) * 100;
+            racerIcon.style.left = `${Math.min(progress, 100)}%`;
+        }
     }
 </script>
 {% endblock %}
