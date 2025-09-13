@@ -74,6 +74,7 @@ Competition
                         <a href="{% url 'typing_game:delete_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to delete ')">Delete</a>
                         {% if competition.status == 'active' %}
                             <a href="{% url 'typing_game:live_competition' competition.id %}" class="button" onclick="return confirm('Please confirm')">Go to Live</a>
+                            <a href="{% url 'typing_game:deactivate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to deactivate this competition?')">Deactivate</a>
                         {% else %}
                             <a href="{% url 'typing_game:activate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to activate this competition?')">Activate</a>
                         {% endif %}

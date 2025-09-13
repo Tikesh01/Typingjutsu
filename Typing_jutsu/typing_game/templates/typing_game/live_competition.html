@@ -180,7 +180,7 @@
             {%if competition.started %}
                 <a href="#" class="button danger" onclick="return confirm('Are you sure you want to restart the competition?')" >Restart Competition</a>
             {% else %}
-                <a href="{% url 'typing_game:start_competition' competition.id %}" class="button primary" onclick="return confirm('Are you sure you want to start the competition?')">Start Competition</a>
+                 <a href="{% url 'typing_game:start_competition' competition.id %}" class="button primary" onclick="return confirm('Are you sure you want to start the competition?')">Start Competition</a>
             {%endif%}
         {%endif%}
         <span id="expand-btn" class="button" onclick="toggleExpand('container')"><i class="fas fa-expand"></i></span>

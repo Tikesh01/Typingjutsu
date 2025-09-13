@@ -43,13 +43,6 @@ def signup(request):
                 )
                 new_user.set_password(password)
                 
-                # Check if this password is already used by comparing hashes
-                existing_participants = Participant.objects.all()
-                for participant in existing_participants:
-                    if participant.check_password(password):
-                        messages.error(request, 'This password is already used by another participant. Please choose a different password.')
-                        return render(request, 'typing_game/signup.html', get_auth_context(request))
-                
                 new_user.save()
                 messages.success(request, 'Welcome to Typing Jutsu! Please login to start practicing.')
                 
