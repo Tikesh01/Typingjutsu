@@ -326,10 +326,12 @@ def join_competition(request, competition_id):
 
 @login_required
 @participant_required
-def live_competition(request):
+def live_competition(request, competition_id):
     context = get_auth_context(request)
+    competition = get_object_or_404(Competition, id=competition_id)
+    context['competition'] = competition
     
-    return render(request, 'typing_game/live_competition', context)
+    return render(request, 'typing_game/live_competition.html', context)
 
 @login_required
 def leaderboard(request):
