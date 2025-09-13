@@ -145,6 +145,32 @@
         justify-content: center;
         font-weight: bold;
     }
+    .description_container{
+        margin: 1em 0;
+    }
+    #countdown-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        display: none; /* Hidden by default */
+        justify-content: center;
+        align-items: center;
+        z-index: 1002;
+        flex-direction: column;
+        color: white;
+    }
+    #countdown-number {
+        font-size: 8em;
+        font-weight: bold;
+        color: orange;
+    }
+    #countdown-message {
+        font-size: 1.5em;
+        margin-top: 1em;
+    }
 </style>
 <div class="page-header">
     <h1>{{competition.title}} is live</h1>
@@ -154,7 +180,7 @@
             {%if competition.started %}
                 <a href="#" class="button danger" onclick="return confirm('Are you sure you want to restart the competition?')" >Restart Competition</a>
             {% else %}
-                <a href="#" class="button primary" onclick="return confirm('Are you sure you want to start the competition?')">Start Competition</a>
+                <a href="{% url 'typing_game:start_competition' competition.id %}" class="button primary" onclick="return confirm('Are you sure you want to start the competition?')">Start Competition</a>
             {%endif%}
         {%endif%}
         <span id="expand-btn" class="button" onclick="toggleExpand('container')"><i class="fas fa-expand"></i></span>
@@ -186,7 +212,7 @@
             </div>
             <div class="stat-box">
                 <h4>Time:</h4>
-                <p id="time">0s</p>
+                <p id="time">0s/{{competition.duration}} minute(s)</p>
             </div>
         </div>
         <div class="race-track-container">
@@ -202,6 +228,9 @@
             <div class="half-header">
                 <span id="duration">{{competition.duration}} minute(s)</span> 
                 <span>{{competition.type}} typing</span>
+                {% if competition.started %}
+                    <span>{{competition.start_time}} - {{competition.end_time}}</span>
+                {%endif%}
             </div>
         </div>
         <div id="text-display" >
@@ -213,10 +242,30 @@
         </div>
         <div class="type-para">
             <label for="typing-input">Type the Paragraph here</label>
-            <textarea name="typing-input" id="typing-input" placeholder="Start typing here..." rows="1" oninput="checkInput()"></textarea>
+            <textarea name="typing-input" id="typing-input" placeholder="Wait for the competition to start..." rows="1" oninput="checkInput()" disabled></textarea>
+        </div>
+        <div id="submission-section" style="display: none; margin-top: 1em; text-align: center;">
+            <p>Competition has ended! Submit your final score.</p>
+            <form id="result-form" method="post" action="{% url 'typing_game:submit_result' competition.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="wpm" id="form-wpm">
+                <input type="hidden" name="accuracy" id="form-accuracy">
+                <input type="hidden" name="time_taken" id="form-time-taken">
+                <button type="submit" class="button primary">Submit Result</button>
+            </form>
         </div>
     </div>
 {%endif%}
+<div id="countdown-overlay">
+    <div id="countdown-number"></div>
+    <div id="countdown-message">The competition is about to begin...</div>
+</div>
+<div class="description_container">
+    <h1>Description</h1>
+    <div class="description">
+        {{competition.description}}
+    </div>
+</div>
 <script>
     function toggleExpand(containerClass) {
         const container = document.querySelector('.' + containerClass);
@@ -260,6 +309,10 @@
     const timeElement = document.getElementById('time');
     const racerIcon = document.getElementById('racer-icon');
 
+    // New elements for countdown and submission
+    const countdownOverlay = document.getElementById('countdown-overlay');
+    const countdownNumber = document.getElementById('countdown-number');
+
     let words = [];
     let currentWordIndex = 0;
     let correctWords = 0;
@@ -274,9 +327,53 @@
 
     let startTime;
     let timerInterval;
+    let competitionTimerInterval;
+
+    // --- Competition State ---
+    const competitionStarted = "{{ competition.started|yesno:'true,false' }}";
+    const competitionStartTime = new Date("{{ competition.start_time.isoformat }}");
+    const competitionDuration = "{{ competition.duration }}" * 60; // in seconds
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (competitionStarted) {
+            const now = new Date();
+            const countdownEndsAt = new Date(competitionStartTime.getTime());
+            const secondsUntilStart = (countdownEndsAt - now) / 1000;
+
+            if (secondsUntilStart > 0) {
+                startPreCompetitionCountdown(secondsUntilStart);
+            } else {
+                // Competition already in progress
+                const mainTimeLeft = competitionDuration + (secondsUntilStart);
+                if (mainTimeLeft > 0) {
+                    enableTyping();
+                    startMainCompetitionTimer(mainTimeLeft);
+                } else {
+                    endCompetition();
+                }
+            }
+        }
+    });
+
+    function startPreCompetitionCountdown(seconds) {
+        countdownOverlay.style.display = 'flex';
+        let count = Math.ceil(seconds);
+
+        const countdownInterval = setInterval(() => {
+            countdownNumber.textContent = count;
+            if (count <= 0) {
+                clearInterval(countdownInterval);
+                countdownOverlay.style.display = 'none';
+                enableTyping();
+                startMainCompetitionTimer(competitionDuration);
+            }
+            count--;
+        }, 1000);
+    }
 
     function checkInput() {
-        if (!startTime && typingInput.value.length > 0) {
+        // This is the typing timer for WPM, not the main competition timer
+        if (!startTime && typingInput.value.length > 0 && !typingInput.disabled) {
             startTime = new Date();
             timerInterval = setInterval(updateStats, 1000); // Update stats every second
         }
@@ -333,11 +430,42 @@
         updateStats();
     }
 
+    function startMainCompetitionTimer(durationInSeconds) {
+        let timeLeft = durationInSeconds;
+        competitionTimerInterval = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(competitionTimerInterval);
+                endCompetition();
+            }
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = Math.floor(timeLeft % 60);
+            timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/${competition.duration} minute(s)`;
+            timeLeft--;
+        }, 1000);
+    }
+
+    function enableTyping() {
+        if (typingInput) {
+            typingInput.disabled = false;
+            typingInput.placeholder = "Start typing now!";
+            typingInput.focus();
+        }
+    }
+
+    function endCompetition() {
+        if (typingInput) {
+            typingInput.disabled = true;
+            typingInput.placeholder = "Time's up!";
+        }
+        document.getElementById('submission-section').style.display = 'block';
+    }
+
     function updateStats() {
         if (!startTime) return;
 
-        const elapsedTime = (new Date() - startTime) / 1000; // in seconds
-        timeElement.textContent = `${Math.round(elapsedTime)}s`;
+        // This is for WPM calculation, not the main timer display
+        const elapsedTime = (new Date() - startTime) / 1000;
+        // timeElement.textContent = `${Math.round(elapsedTime)}s`; // We now use the main timer
 
         // WPM is based on a standard of 5 characters per word (including space)
         const wpm = (totalCharsTyped / 5) / (elapsedTime / 60);
@@ -352,6 +480,11 @@
             const progress = (currentWordIndex / words.length) * 100;
             racerIcon.style.left = `${Math.min(progress, 100)}%`;
         }
+
+        // Update hidden form fields for submission
+        document.getElementById('form-wpm').value = wpmElement.textContent;
+        document.getElementById('form-accuracy').value = accuracyElement.textContent.replace('%', '');
+        document.getElementById('form-time-taken').value = elapsedTime;
     }
 </script>
 {% endblock %}

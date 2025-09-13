@@ -314,6 +314,7 @@ def deactivate_competition(request, competition_id):
         competition = Competition.objects.get(id=competition_id, organizer_id=request.session.get('user_id'))
         competition.status = 'waiting'
         competition.participants.clear()
+        competition.started = False
         competition.save()
         messages.success(request, f"Competition '{competition.title}' has been deactivated.")
     except Competition.DoesNotExist:
@@ -328,30 +329,11 @@ def live_competition(request,competition_id):
     competition = get_object_or_404(Competition, id=competition_id)
     context['competition'] = competition
     context['joined_participants'] = competition.participants.all()
-
+    if competition.started:
+        context['countdown'] = True #10 second countdown for all participant and user
+    else:
+        context['countdown'] = False
     return render(request, 'typing_game/live_competition.html', context)
-
-@login_required
-def leaderboard(request):
-    """Leaderboard page - accessible to all logged-in users"""
-    return render(request, 'typing_game/leaderboard.html', get_auth_context(request))
-
-# Public pages
-def terms(request):
-    """Terms of service page"""
-    return render(request, 'typing_game/terms.html', get_auth_context(request))
-
-def privacy(request):
-    """Privacy policy page"""
-    return render(request, 'typing_game/privacy.html', get_auth_context(request))
-
-def help_view(request):
-    """Help page"""
-    return render(request, 'typing_game/help.html', get_auth_context(request))
-
-def health_check(request):
-    """Health check endpoint for deployment platforms."""
-    return HttpResponse("OK", status=200)
 
 # join
 @login_required
@@ -376,3 +358,64 @@ def join_competition(request, competition_id):
     context['competition'] = competition
     context['joined_participants'] = competition.participants.all()
     return render(request, 'typing_game/live_competition.html', context)
+
+@login_required
+@organizer_required
+def start_competition(request, competition_id):
+    try:
+        competition = Competition.objects.get(id=competition_id, organizer_id=request.session.get('user_id'))
+        if competition.started:
+            messages.warning(request, f"The competition '{competition.title}' has already started.")
+            return redirect('typing_game:live_competition', competition_id)
+
+        competition.started = True
+        competition.start_time = timezone.now() + timedelta(seconds=10) # 10 second delay for countdown
+        competition.save()
+        messages.success(request, f"The competition '{competition.title}' has started!")
+    except Competition.DoesNotExist:
+        messages.error(request, "Competition not found or you don't have permission to start it.")
+    return redirect('typing_game:live_competition', competition_id)
+
+@login_required
+@participant_required
+def submit_result(request, competition_id):
+    if request.method == 'POST':
+        participant_id = request.session.get('user_id')
+        competition = get_object_or_404(Competition, id=competition_id)
+        participant = get_object_or_404(Participant, id=participant_id)
+
+        wpm = float(request.POST.get('wpm', 0))
+        accuracy = float(request.POST.get('accuracy', 0))
+        time_taken = float(request.POST.get('time_taken', 0))
+
+        # Use update_or_create to handle re-submissions
+        CompetitionResult.objects.update_or_create(
+            competition=competition,
+            participant=participant,
+            defaults={'wpm': wpm, 'accuracy': accuracy, 'time_taken': time_taken}
+        )
+        messages.success(request, "Your result has been submitted successfully!")
+        return redirect('typing_game:competitions') # Redirect to competitions list
+    return redirect('typing_game:live_competition', competition_id)
+
+@login_required
+def leaderboard(request):
+    """Leaderboard page - accessible to all logged-in users"""
+    return render(request, 'typing_game/leaderboard.html', get_auth_context(request))
+
+# Public pages
+def terms(request):
+    """Terms of service page"""
+    return render(request, 'typing_game/terms.html', get_auth_context(request))
+
+def privacy(request):
+    """Privacy policy page"""
+    return render(request, 'typing_game/privacy.html', get_auth_context(request))
+
+def help_view(request):
+    """Help page"""
+    return render(request, 'typing_game/help.html', get_auth_context(request))
+
+def health_check(request):
+    """Health check endpoint for deployment platforms."""
+    return HttpResponse("OK", status=200)
