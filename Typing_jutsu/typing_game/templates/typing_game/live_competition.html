@@ -5,6 +5,14 @@
 {% block title %}Live Competition: {{ competition.title }}{% endblock %}
 
 {% block page %}
+<style>
+    .page-header{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 1em 0;
+    }
+</style>
 <div class="page-header">
     <h1>{{competition.title}} is live</h1>
     {%if competition.started %}
