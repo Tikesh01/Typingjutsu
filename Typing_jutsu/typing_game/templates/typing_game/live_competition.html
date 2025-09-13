@@ -23,4 +23,15 @@
         {%endif%}
     {%endif%}
 </div>
+<div class="container">
+    <h2>Participants</h2>
+    {% if competition.oraganizer.id == user.id  and user_role == 'organizer' %}
+        {% for participant in joined_participants %}
+            <p><strong>{{participants.name}}</strong></p>
+        {%empty%}
+            <p>No participants yet</p>
+        {%endfor%}
+    {%else%}
+    {%endif%}
+</div>
 {% endblock %}
