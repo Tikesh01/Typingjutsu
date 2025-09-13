@@ -95,28 +95,31 @@
         </ul>
     </div>
 {%else%}
-    <h2>Your Performance</h2>
-    <div class="race-track">
-        Typing not started yet
-    </div>
-    <h2 id="para-header">
-        <span>Uploaded Paragraph </span> 
-        <span id="duration">{{competition.duration}} minute(s)</span> 
-    </h2>
-    <div class="uploaded_para">
-        {% for para in competition.paragraphs %}
-            {{ para.text }}
-        {%empty%}
-            <p>No paragraph uploaded</p>
-        {%endfor%}
-    </div>
-    <div class="type-para">
-        <label for="TypingPara">Type the Paragraph here</label>
-        {% if competition.started %}
-            <textarea name="TypingPara" id="TypingPara" placeholder="Start typing here" rows="1"></textarea>
-        {% else %}
-            <textarea name="TypingPara" id="TypingPara" placeholder="Wait for the organizer to start the competition..." rows="1" disabled></textarea>
-        {%endif%}
+    <div class="container">
+        <h2>Your Performance</h2> 
+        <div class="race-track">
+            Typing not started yet
+        </div>
+        <h2 id="para-header">
+            <span>Uploaded Paragraph </span> 
+            <span id="duration">{{competition.duration}} minute(s)</span> 
+            <span>{{competition.type}} typing</span>
+        </h2>
+        <div class="uploaded_para">
+            {% for para in competition.paragraphs %}
+                {{ para.text }}
+            {%empty%}
+                <p>No paragraph uploaded</p>
+            {%endfor%}
+        </div>
+        <div class="type-para">
+            <label for="TypingPara">Type the Paragraph here</label>
+            {% if competition.started %}
+                <textarea name="TypingPara" id="TypingPara" placeholder="Start typing here" rows="1"></textarea>
+            {% else %}
+                <textarea name="TypingPara" id="TypingPara" placeholder="Wait for the organizer to start the competition..." rows="1" disabled></textarea>
+            {%endif%}
+        </div>
     </div>
 {%endif%}
 {% endblock %}

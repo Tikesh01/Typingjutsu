@@ -307,24 +307,6 @@ def activate_competition(request,competition_id):
     return render(request, 'typing_game/live_competition.html', context)
 
 @login_required
-@participant_required
-def join_competition(request, competition_id):
-    """Allows participants to join an active competition."""
-    participant_id = request.session.get('user_id')
-    competition = get_object_or_404(Competition, id=competition_id)
-
-    if competition.status != 'active':
-        messages.error(request, "This competition is not currently active.")
-        return redirect('typing_game:competitions')
-
-    participant = get_object_or_404(Participant, id=participant_id)
-    competition.participants.add(participant)
-    competition.save()
-
-    messages.success(request, f"You have successfully joined the competition '{competition.title}'!")
-    return redirect('typing_game:live_competition') 
-
-@login_required
 def live_competition(request,competition_id):
     context = get_auth_context(request)
     
