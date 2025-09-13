@@ -368,7 +368,6 @@ def join_competition(request, competition_id):
     competition.participants.add(participant)
     competition.save()
     context['competition'] = competition
-    context['participant'] = participant
-    
+    context['joind_participant'] = list(competition.participants)
     messages.success(request, f"You have successfully joined the competition '{competition.title}'!")
     return render(request, 'typing_game/live_competition.html',context)
