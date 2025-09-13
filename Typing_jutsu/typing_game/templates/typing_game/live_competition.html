@@ -218,7 +218,7 @@
         <div class="race-track-container">
             <div class="race-track">
                 <span>🏁</span>
-                <div id="racer-icon"><img src="{% static 'images/bike.png' %}" alt=""></div>
+                <div id="racer-icon">🏎️</div>
                 <span>🏆</span>
             </div>
         </div>
@@ -235,14 +235,14 @@
         </div>
         <div id="text-display" >
             {% for para in competition.paragraphs %}
-                {{ para.text }}
+                <p>{{ para.text|safe }}</p>
             {%empty%}
                 <p>No paragraph uploaded</p>
             {%endfor%}
         </div>
         <div class="type-para">
             <label for="typing-input">Type the Paragraph here</label>
-            <textarea name="typing-input" id="typing-input" placeholder="Wait for the competition to start..." rows="1" oninput="checkInput()" disabled></textarea>
+            <textarea name="typing-input" id="typing-input" placeholder="Wait for the competition to start..." rows="1" oninput="checkInput(event)" disabled></textarea>
         </div>
         <div id="submission-section" style="display: none; margin-top: 1em; text-align: center;">
             <p>Competition has ended! Submit your final score.</p>
@@ -320,8 +320,10 @@
 
     if (textDisplay) {
         // Wrap each word in a span to control it individually
-        const originalText = textDisplay.textContent.trim();
-        words = originalText.split(/\s+/);
+        // Use innerText to preserve line breaks as '\n'
+        const originalText = textDisplay.innerText.trim();
+        // Split by space or newline, but keep the newlines in the array
+        words = originalText.split(/(\s+)/).filter(w => w.length > 0);
         textDisplay.innerHTML = words.map(word => `<span>${word}</span>`).join(' ');
     }
 
@@ -330,9 +332,9 @@
     let competitionTimerInterval;
 
     // --- Competition State ---
-    const competitionStarted = "{{ competition.started|yesno:'true,false' }}";
+    const competitionStarted = {{ competition.started|yesno:"true,false" }};
     const competitionStartTime = new Date("{{ competition.start_time.isoformat }}");
-    const competitionDuration = "{{ competition.duration }}" * 60; // in seconds
+    const competitionDuration = {{ competition.duration }} * 60; // in seconds
 
     document.addEventListener('DOMContentLoaded', function() {
         if (competitionStarted) {
@@ -371,7 +373,7 @@
         }, 1000);
     }
 
-    function checkInput() {
+    function checkInput(event) {
         // This is the typing timer for WPM, not the main competition timer
         if (!startTime && typingInput.value.length > 0 && !typingInput.disabled) {
             startTime = new Date();
@@ -383,7 +385,9 @@
         const wordSpans = textDisplay.querySelectorAll('span');
 
         // When space is pressed, it means the user is moving to the next word
-        if (typedValue.endsWith(' ')) {
+        const isWordEnd = typedValue.endsWith(' ');
+        const isNewline = event && event.key === 'Enter' && currentWord && currentWord.includes('\n');
+        if (isWordEnd || isNewline) {
             const typedWord = typedValue.trim();
 
             // Don't do anything if the user just presses space
@@ -392,9 +396,13 @@
                 return;
             }
 
-            totalCharsTyped += typedWord.length + 1; // +1 for the space
+            if (isNewline) {
+                totalCharsTyped += 1; // Count the enter key
+            } else {
+                totalCharsTyped += typedWord.length + 1; // +1 for the space
+            }
 
-            if (typedWord === currentWord) {
+            if (isNewline || typedWord === currentWord) {
                 correctWords++;
                 wordSpans[currentWordIndex].classList.add('correct-word');
             } else {
@@ -439,7 +447,7 @@
             }
             const minutes = Math.floor(timeLeft / 60);
             const seconds = Math.floor(timeLeft % 60);
-            timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/${competition.duration} minute(s)`;
+            timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} / {{competition.duration}} minute(s)`;
             timeLeft--;
         }, 1000);
     }
@@ -465,7 +473,6 @@
 
         // This is for WPM calculation, not the main timer display
         const elapsedTime = (new Date() - startTime) / 1000;
-        // timeElement.textContent = `${Math.round(elapsedTime)}s`; // We now use the main timer
 
         // WPM is based on a standard of 5 characters per word (including space)
         const wpm = (totalCharsTyped / 5) / (elapsedTime / 60);
