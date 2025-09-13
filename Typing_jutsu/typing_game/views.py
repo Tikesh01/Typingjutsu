@@ -325,8 +325,7 @@ def join_competition(request, competition_id):
     return redirect('typing_game:live_competition') 
 
 @login_required
-@participant_required
-def live_competition(request):
+def live_competition(request,competition_id):
     context = get_auth_context(request)
     
     return render(request, 'typing_game/live_competition', context)
@@ -353,7 +352,7 @@ def health_check(request):
     """Health check endpoint for deployment platforms."""
     return HttpResponse("OK", status=200)
 
-# join
+# joi
 @login_required
 def join_competition(request, competition_id):
     """Allows participants to join an active competition."""
