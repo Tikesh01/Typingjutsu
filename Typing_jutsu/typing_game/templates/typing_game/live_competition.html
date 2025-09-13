@@ -1,0 +1,12 @@
+<!-- live_competition.html -->
+{% extends 'typing_game/base.html' %} 
+{% load static %}
+
+{% block title %}Live Competition: {{ competition.title }}{% endblock %}
+
+{% block page %}
+<div class="page-header">
+    <h1>{{competition.title}} is live</h1>
+    <a href="#" class="button">Restart</a>
+</div>
+{% endblock %}

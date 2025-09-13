@@ -1,10 +1,12 @@
-from django.shortcuts import render, redirect, get_list_or_404
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from .models import Participant, Organizer, Competition
+from .models import Participant, Organizer, Competition, CompetitionResult
 from .decorators import login_required, participant_required, organizer_required
 from django.utils import timezone
+from datetime import timedelta
 
 
 def get_auth_context(request):
@@ -14,6 +16,7 @@ def get_auth_context(request):
     return {
         'is_authenticated': bool(user_id),
         'user_role': user_role,
+        'user_id' : user_id,
     }
 
 
@@ -179,22 +182,23 @@ def practice(request):
 
 @login_required
 def competitions(request):
-    """
-    Displays a list of competitions.
-    - Organizers can see all competitions and a link to create new ones.
-    - Participants can see upcoming competitions and join them.
-    """
     context = get_auth_context(request)
-    all_competitions = Competition.objects.filter(end_time__gte=timezone.now()).order_by('start_time') # Show started and upcoming
+    user_id = context.get('user_id')
+    user_role = context.get('user_role')
+    profile_user = None
 
-    if context['user_role'] == 'participant':
-        user_id = request.session.get('user_id')
-        participant = Participant.objects.get(id=user_id)
-        # Annotate each competition with whether the participant has joined
-        for comp in all_competitions:
-            comp.is_joined = comp.participants.filter(id=participant.id).exists()
+    if user_id and user_role:
+        try:
+            if user_role == 'participant':
+                profile_user = Participant.objects.get(id=user_id)
+            elif user_role == 'organizer':
+                profile_user = Organizer.objects.get(id=user_id)
+        except (Participant.DoesNotExist, Organizer.DoesNotExist):
+            request.session.flush() # User in session not in DB, clear it.
 
-    context['competitions'] = all_competitions
+    context['competitions'] = Competition.objects.order_by('-start_time')
+    context['profile_user'] = profile_user
+
     return render(request, 'typing_game/competitions.html', context)
 
 @organizer_required
@@ -207,10 +211,10 @@ def create_competition(request):
             description = request.POST.get('description')
             paragraphs_raw = request.POST.get('paragraphs')
             start_time = request.POST.get('start_time')
-            end_time = request.POST.get('end_time')
+            duration = request.POST.get('duration')
             organizer_id = request.session.get('user_id')
 
-            if not all([title, competition_type, description, start_time, end_time,paragraphs_raw]):
+            if not all([title, competition_type, description, start_time, duration,paragraphs_raw]):
                 messages.error(request, "All fields are required.")
                 return render(request, 'typing_game/create_competition.html', get_auth_context(request))
 
@@ -238,7 +242,7 @@ def create_competition(request):
                 type=competition_type,
                 paragraphs=paragraphs_data,
                 start_time=start_time,
-                end_time=end_time,
+                duration=int(duration),
                 organizer=organizer
             )
             messages.success(request, f"Competition '{title}' created successfully!")
@@ -261,7 +265,7 @@ def edit_competition(request, competition_id):
             competition.description = request.POST.get('description')
             competition.type = request.POST.get('type')
             competition.start_time = request.POST.get('start_time')
-            competition.end_time = request.POST.get('end_time')
+            competition.duration = request.POST.get('duration')            
 
             paragraphs_raw = request.POST.get('paragraphs')
             paragraphs_list = [p.strip() for p in paragraphs_raw.split('\n\n') if p.strip()]
@@ -291,25 +295,41 @@ def delete_competition(request, competition_id):
     return redirect('typing_game:competitions')
 
 @organizer_required
-def start_competition(request, competition_id):
-    """Allows organizers to start their own competitions."""
-    try:
-        competition = Competition.objects.get(id=competition_id, organizer_id=request.session.get('user_id'))
-        competition.started = True
-        competition.save()
-        messages.success(request, f"Competition '{competition.title}' started successfully!")
-    except Competition.DoesNotExist:
-        messages.error(request, "Competition not found or you don't have permission to start it.")
-    except Exception as e:
-        messages.error(request, f"An error occurred while starting the competition: {e}")
-    return redirect('typing_game:competitions')
+def activate_competition(request,competition_id):
+    context = get_auth_context(request)
+    competition = Competition.objects.get(id=competition_id)
+    
+    competition.status = 'active'
+    competition.save()
+    
+    context['competition'] = competition
+    
+    return render(request, 'typing_game/live_competition.html', context)
+
+@login_required
 @participant_required
 def join_competition(request, competition_id):
-    participant = Participant.objects.get(id=request.session.get('user_id'))
-    competition = Competition.objects.get(id=competition_id)
+    """Allows participants to join an active competition."""
+    participant_id = request.session.get('user_id')
+    competition = get_object_or_404(Competition, id=competition_id)
+
+    if competition.status != 'active':
+        messages.error(request, "This competition is not currently active.")
+        return redirect('typing_game:competitions')
+
+    participant = get_object_or_404(Participant, id=participant_id)
     competition.participants.add(participant)
-    messages.success(request, f"You have successfully joined the '{competition.title}' competition!")
-    return redirect('typing_game:competitions')
+    competition.save()
+
+    messages.success(request, f"You have successfully joined the competition '{competition.title}'!")
+    return redirect('typing_game:live_competition') 
+
+@login_required
+@participant_required
+def live_competition(request):
+    context = get_auth_context(request)
+    
+    return render(request, 'typing_game/live_competition', context)
 
 @login_required
 def leaderboard(request):
@@ -328,3 +348,25 @@ def privacy(request):
 def help_view(request):
     """Help page"""
     return render(request, 'typing_game/help.html', get_auth_context(request))
+
+def health_check(request):
+    """Health check endpoint for deployment platforms."""
+    return HttpResponse("OK", status=200)
+
+# join
+@login_required
+def join_competition(request, competition_id):
+    """Allows participants to join an active competition."""
+    participant_id = request.session.get('user_id')
+    competition = get_object_or_404(Competition, id=competition_id)
+
+    if competition.status != 'active':
+        messages.error(request, "This competition is not currently active.")
+        return redirect('typing_game:competitions')
+
+    participant = get_object_or_404(Participant, id=participant_id)
+    competition.participants.add(participant)
+    competition.save()
+
+    messages.success(request, f"You have successfully joined the competition '{competition.title}'!")
+    return redirect('typing_game:live_competition')
