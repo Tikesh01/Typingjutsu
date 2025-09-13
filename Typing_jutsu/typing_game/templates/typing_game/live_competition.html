@@ -20,6 +20,9 @@
         word-spacing: 0.5em;
         letter-spacing: 0.2em;
     }
+    .type-para{
+
+    }
 </style>
 <div class="page-header">
     <h1>{{competition.title}} is live</h1>
@@ -41,13 +44,17 @@
         {%endfor%}
     </div>
 {%else%}
-    <h2>The paragraph</h2>
+    <h2>The Paragraph</h2>
     <div class="uploaded_para">
         {% for para in competition.paragraphs %}
-            {{para}}
+            {{ para }}
         {%empty%}
             <p>No paragraph uploaded</p>
         {%endfor%}
+    </div>
+    <div class="type-para">
+        <label for="TypingPara">Type the para</label>
+        <textarea name="TypingPara" id="TypingPara"></textarea>
     </div>
 {%endif%}
 {% endblock %}
