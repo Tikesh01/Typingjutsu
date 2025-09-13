@@ -12,6 +12,14 @@
         align-items: center;
         margin: 1em 0;
     }
+    .uploaded_para{
+        border: 2px gainsboro solid;
+        border-radius: 10px;
+        padding: 1em;
+        text-align: justify;
+        word-spacing: 0.5em;
+        letter-spacing: 0.2em;
+    }
 </style>
 <div class="page-header">
     <h1>{{competition.title}} is live</h1>
@@ -23,15 +31,23 @@
         {%endif%}
     {%endif%}
 </div>
-<div class="container">
-    <h2>Participants</h2>
-    {% if competition.oraganizer.id == user.id  and user_role == 'organizer' %}
+{% if competition.oraganizer.id == user.id  and user_role == 'organizer' %}
+    <div class="container">
+        <h2>Participants</h2>
         {% for participant in joined_participants %}
             <p><strong>{{participants.name}}</strong></p>
         {%empty%}
             <p>No participants yet</p>
         {%endfor%}
-    {%else%}
-    {%endif%}
-</div>
+    </div>
+{%else%}
+    <h2>The paragraph</h2>
+    <div class="uploaded_para">
+        {% for para in competition.paragraphs %}
+            {{para}}
+        {%empty%}
+            <p>No paragraph uploaded</p>
+        {%endfor%}
+    </div>
+{%endif%}
 {% endblock %}
