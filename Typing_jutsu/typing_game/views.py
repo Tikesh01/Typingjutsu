@@ -356,19 +356,22 @@ def health_check(request):
 @login_required
 def join_competition(request, competition_id):
     """Allows participants to join an active competition."""
-    context = get_auth_context(request)
     participant_id = request.session.get('user_id')
     competition = get_object_or_404(Competition, id=competition_id)
-
+    
     if competition.status != 'active':
         messages.error(request, "This competition is not currently active.")
         return redirect('typing_game:competitions')
-
-    participant = get_object_or_404(Participant, id=participant_id)
-    competition.participants.add(participant)
-    competition.save()
     
+    participant = get_object_or_404(Participant, id=participant_id)
+    
+    # Check if the participant is already in the competition
+    if not competition.participants.filter(id=participant.id).exists():
+        competition.participants.add(participant)
+        messages.success(request, f"You have successfully joined the competition '{competition.title}'!")
+    # If they are already joined, we don't need to do anything or show a message.
+    
+    context = get_auth_context(request)
     context['competition'] = competition
     context['joined_participants'] = competition.participants.all()
-    messages.success(request, f"You have successfully joined the competition '{competition.title}'!")
     return render(request, 'typing_game/live_competition.html', context)
