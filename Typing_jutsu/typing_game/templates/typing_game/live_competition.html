@@ -16,6 +16,9 @@
         border: 2px gainsboro solid;
         border-radius: 10px;
         padding: 1em;
+        text-align: justify;
+        word-spacing: 0.5em;
+        letter-spacing: 0.2em;
     }
 </style>
 <div class="page-header">
@@ -43,6 +46,7 @@
         {% for para in competition.paragraphs %}
             {{para}}
         {%empty%}
+            <p>No paragraph uploaded</p>
         {%endfor%}
     </div>
 {%endif%}
