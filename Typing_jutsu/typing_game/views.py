@@ -438,6 +438,16 @@ def delete_result(request, result_id):
     return redirect('typing_game:leaderboard')
 
 # Public pages
+@login_required
+def competition_status_api(request, competition_id):
+    """API endpoint to get the status of a competition."""
+    competition = get_object_or_404(Competition, id=competition_id)
+    return JsonResponse({
+        'started': competition.started,
+        'start_time': competition.start_time.isoformat() if competition.started else None,
+    })
+
+
 def terms(request):
     """Terms of service page"""
     return render(request, 'typing_game/terms.html', get_auth_context(request))

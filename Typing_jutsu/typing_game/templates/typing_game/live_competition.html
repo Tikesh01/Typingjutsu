@@ -337,6 +337,9 @@
         const accuracyElement = document.getElementById('accuracy');
         const timeElement = document.getElementById('time');
         const racerIcon = document.getElementById('racer-icon');
+        const competitionType = "{{ competition.type }}";
+        const userRole = "{{ user_role }}"; // Define userRole globally
+
 
         // New elements for countdown and submission
         const countdownOverlay = document.getElementById('countdown-overlay');
@@ -346,6 +349,7 @@
         let currentWordIndex = 0;
         let correctWords = 0;
         let totalCharsTyped = 0;
+        let competitionCheckInterval;
 
         if (textDisplay) {
             const originalText = textDisplay.textContent.trim();
@@ -366,14 +370,34 @@
         // --- Competition State ---
         const competitionStarted = {{ competition.started|yesno:'true,false' }};
         const competitionStartTime = new Date("{{ competition.start_time.isoformat }}");
-        const competitionDuration = {{ competition.duration }} * 60; // in seconds
-        const competitionType = "{{ competition.type }}";
-        const userRole = "{{ user_role }}"; // Define userRole globally
+        const competitionDuration = {{ competition.duration }} * 60; // in seconds        
 
         document.addEventListener('DOMContentLoaded', function() {
-            if (competitionStarted) { // This handles the countdown for all types
+            if (userRole === 'participant' && !competitionStarted) {
+                // If participant joins before start, poll for start signal
+                competitionCheckInterval = setInterval(checkCompetitionStatus, 3000); // Check every 3 seconds
+            } else if (competitionStarted) {
+                handleCompetitionStart(competitionStartTime);
+            }
+        });
+
+        function checkCompetitionStatus() {
+            fetch(`{% url 'typing_game:competition_status_api' competition.id %}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.started) {
+                        clearInterval(competitionCheckInterval); // Stop polling
+                        // Use the start time from the server to be accurate
+                        const serverStartTime = new Date(data.start_time);
+                        handleCompetitionStart(serverStartTime);
+                    }
+                })
+                .catch(error => console.error('Error checking competition status:', error));
+        }
+
+        function handleCompetitionStart(startTime) {
                 const now = new Date();
-                const countdownEndsAt = new Date(competitionStartTime.getTime());
+                const countdownEndsAt = new Date(startTime.getTime());
                 const secondsUntilStart = (countdownEndsAt - now) / 1000;
 
                 if (secondsUntilStart > 0) {
@@ -391,13 +415,13 @@
                         endCompetition();
                     }
                 }
-            }
-        });
+        }
 
         function startPreCompetitionCountdown(seconds) {
             countdownOverlay.style.display = 'flex';
             let count = Math.ceil(seconds);
 
+            // Clear any previous interval to avoid multiple countdowns
             const countdownInterval = setInterval(() => {
                 countdownNumber.textContent = count;
                 if (count <= 0) {
@@ -406,6 +430,7 @@
                         enableTyping();
                     }
                     startMainCompetitionTimer(competitionDuration);
+                    clearInterval(countdownInterval);
                 }
                 count--;
             }, 1000);
@@ -484,7 +509,7 @@
                 }
                 const minutes = Math.floor(timeLeft / 60);
                 const seconds = Math.floor(timeLeft % 60);
-                timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/${competition.duration} minute(s)`;
+                timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/{{competition.duration}} minute(s)`;
                 timeLeft--;
             }, 1000);
         }
