@@ -462,13 +462,15 @@
                     return;
                 }
 
+                const spanIndex = (competitionType === 'Reverse') ? (words.length - 1 - currentWordIndex) : currentWordIndex;
+
                 totalCharsTyped += typedWord.length + 1; // +1 for the space
 
                 if (typedWord === currentWord) {
                     correctWords++;
-                    wordSpans[currentWordIndex].classList.add('correct-word');
+                    wordSpans[spanIndex].classList.add('correct-word');
                 } else {
-                    wordSpans[currentWordIndex].classList.add('incorrect-word');
+                    wordSpans[spanIndex].classList.add('incorrect-word');
                 }
 
                 // Check if the paragraph is completed
@@ -484,8 +486,9 @@
                 typingInput.value = ''; // Clear the textarea for the next word
 
                 // Remove the red background from the next word if it had one
-                if (wordSpans[currentWordIndex]) {
-                    wordSpans[currentWordIndex].classList.remove('incorrect-word');
+                const nextSpanIndex = (competitionType === 'Reverse') ? (words.length - 1 - currentWordIndex) : currentWordIndex;
+                if (wordSpans[nextSpanIndex]) {
+                    wordSpans[nextSpanIndex].classList.remove('incorrect-word');
                 }
 
             } else {
@@ -509,7 +512,8 @@
                 }
                 const minutes = Math.floor(timeLeft / 60);
                 const seconds = Math.floor(timeLeft % 60);
-                timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/{{competition.duration}} minute(s)`;
+                const totalMinutes = Math.floor(durationInSeconds / 60);
+                timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/${totalMinutes} minute(s)`;
                 timeLeft--;
             }, 1000);
         }
