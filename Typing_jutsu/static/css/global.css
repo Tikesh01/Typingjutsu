@@ -76,11 +76,6 @@ html,body{
 body {
     background-color: var(--background-color);
     color: var(--text-color);
-    min-height: 100vh;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    flex-direction: column;
 }
 
 /* Navigation styles */
@@ -173,13 +168,17 @@ nav a:hover {
 
 /* Main content area */
 main {
-    flex: 1;
     max-width: 1200px;
     width: 100%;
-    /* background: #000; */
+    height: auto;
     min-height: 100vh;
-    height: 100%;
-    max-height: 100%;
+    margin: 2em auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 2em;
+    /* background: #000; */
 }
 
 /* Typography */
@@ -214,7 +213,6 @@ h1 {
     transform: translateY(-2px);
 }
 .form-container {
-    margin: 4rem auto;
     padding: 2rem;
     background-color: var(--gray-800);
     border-radius: 1rem;

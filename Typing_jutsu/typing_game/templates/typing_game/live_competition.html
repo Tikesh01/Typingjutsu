@@ -6,6 +6,10 @@
 
 {% block page %}
 <style>
+    .live_competition-page{
+        width: 100%;
+        margin-top: -2em;
+    }
     .page-header{
         display: flex;
         justify-content: space-between;
@@ -172,100 +176,105 @@
         margin-top: 1em;
     }
 </style>
-<div class="page-header">
-    <h1>{{competition.title}} is live</h1>
-    <div class="half-header">
-        {% if competition.organizer.id == user_id and user_role == 'organizer' %}
-            <a href="{% url 'typing_game:deactivate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to deactivate this competition?')">Deactivate</a>
-            {%if competition.started %}
-                <a href="#" class="button danger" onclick="return confirm('Are you sure you want to restart the competition?')" >Restart Competition</a>
-            {% else %}
-                <a href="{% url 'typing_game:start_competition' competition.id %}" class="button primary" onclick="return confirm('Are you sure you want to start the competition?')">Start Competition</a>
-            {%endif%}
-        {%endif%}
-        <span id="expand-btn" class="button" onclick="toggleExpand('container')"><i class="fas fa-expand"></i></span>
-    </div>
-</div>
-
-{% if competition.organizer.id == user_id and user_role == 'organizer' %}
-    <div class="container">
-        <h2 class="section-header">Joined Participants ({{ joined_participants.count }})</h2>
-        <ul class="participant-list">
-            {% for participant in joined_participants %}
-                <li><strong>{{ participant.name }}</strong></li>
-            {% empty %}
-                <li>No participants have joined yet.</li>
-            {% endfor %}
-        </ul>
-    </div>
-{%else%}
-    <div class="container">
-        <h2 class="section-header">Your Performance</h2> 
-        <div class="performance">
-            <div class="stat-box">
-                <h4>WPM:</h4>
-                <p id="wpm">0</p>
-            </div>
-            <div class="stat-box">
-                <h4>Accuracy:</h4>
-                <p id="accuracy">100%</p>
-            </div>
-            <div class="stat-box">
-                <h4>Time:</h4>
-                <p id="time">0s/{{competition.duration}} minute(s)</p>
-            </div>
-        </div>
-        <div class="race-track-container">
-            <div class="race-track">
-                <span>🏁</span>
-                <div id="racer-icon"><img src="{% static 'images/bike.png' %}" alt=""></div>
-                <span>🏆</span>
-            </div>
-        </div>
-
-        <div id="para-header">
-            <h2>Uploaded Paragraph </h2> 
-            <div class="half-header">
-                <span id="duration">{{competition.duration}} minute(s)</span> 
-                <span>{{competition.type}} typing</span>
-                {% if competition.started %}
-                    <span>{{competition.start_time}} - {{competition.end_time}}</span>
+<div class="live_competition-page">
+    <div class="page-header">
+        <h1>{{competition.title}} is live</h1>
+        <div class="half-header">
+            {% if competition.organizer.id == user_id and user_role == 'organizer' %}
+                <a href="{% url 'typing_game:deactivate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to deactivate this competition?')">Deactivate</a>
+                {%if competition.started %}
+                    <a href="#" class="button danger" onclick="return confirm('Are you sure you want to restart the competition?')" >Restart Competition</a>
+                {% else %}
+                    <a href="{% url 'typing_game:start_competition' competition.id %}" class="button primary" onclick="return confirm('Are you sure you want to start the competition?')">Start Competition</a>
                 {%endif%}
-            </div>
+            {%endif%}
+            <span id="expand-btn" class="button" onclick="toggleExpand('container')"><i class="fas fa-expand"></i></span>
         </div>
-        <div id="text-display" >
-            {% for para in competition.paragraphs %}
-                {{ para.text }}
-            {%empty%}
-                <p>No paragraph uploaded</p>
-            {%endfor%}
-        </div>
-        <div class="type-para">
-            <label for="typing-input">Type the Paragraph here</label>
-            <textarea name="typing-input" id="typing-input" placeholder="Wait for the competition to start..." rows="1" oninput="checkInput()" disabled></textarea>
-        </div>
-        {%if competition.status == 'ended' %}
-            <div id="submission-section" style="display: none; margin-top: 1em; text-align: center;">
-                <p>Competition has ended! Submit your final score.</p>
-                <form id="result-form" method="post" action="{% url 'typing_game:submit_result' competition.id %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="wpm" id="form-wpm">
-                    <input type="hidden" name="accuracy" id="form-accuracy">
-                    <input type="hidden" name="time_taken" id="form-time-taken">
-                    <button type="submit" class="button primary">Submit Result</button>
-                </form>
-            </div>
-        {%endif%}
     </div>
-{%endif%}
-<div id="countdown-overlay">
-    <div id="countdown-number"></div>
-    <div id="countdown-message">The competition is about to begin...</div>
-</div>
-<div class="description_container">
-    <h1>Description</h1>
-    <div class="description">
-        {{competition.description}}
+
+    {% if competition.organizer.id == user_id and user_role == 'organizer' %}
+        <div class="container">
+            <h2 class="section-header">Joined Participants ({{ joined_participants.count }})</h2>
+            <ul class="participant-list">
+                {% for participant in joined_participants %}
+                    <li><strong>{{ participant.name }}</strong></li>
+                {% empty %}
+                    <li>No participants have joined yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {%else%}
+        <div class="container">
+            <h2 class="section-header">Your Performance</h2> 
+            <div class="performance">
+                <div class="stat-box">
+                    <h4>WPM:</h4>
+                    <p id="wpm">0</p>
+                </div>
+                <div class="stat-box">
+                    <h4>Accuracy:</h4>
+                    <p id="accuracy">100%</p>
+                </div>
+                <div class="stat-box">
+                    <h4>Time:</h4>
+                    <p id="time">0s/{{competition.duration}} minute(s)</p>
+                </div>
+            </div>
+            <div class="race-track-container">
+                <div class="race-track">
+                    <span>🏁</span>
+                    <div id="racer-icon"><img src="{% static 'images/bike.png' %}" alt=""></div>
+                    <span>🏆</span>
+                </div>
+            </div>
+
+            <div id="para-header">
+                <h2>Uploaded Paragraph </h2> 
+                <div class="half-header">
+                    <span id="duration">{{competition.duration}} minute(s)</span> 
+                    <span>{{competition.type}} typing</span>
+                    {% if competition.started %}
+                        <span>{{competition.start_time}} - {{competition.end_time}}</span>
+                    {%endif%}
+                </div>
+            </div>
+            <div id="text-display" >
+                {% for para in competition.paragraphs %}
+                    <p>{{ para.text }}</p>
+                {%empty%}
+                    <p>No paragraph uploaded</p>
+                {%endfor%}
+            </div>
+            <div class="type-para">
+                <label for="typing-input">Type the Paragraph here</label>
+                <textarea name="typing-input" id="typing-input" placeholder="Wait for the competition to start..." rows="1" oninput="checkInput()" disabled></textarea>
+            </div>
+            {%if competition.status != 'waiting' %}
+                <div id="submission-section" style="display: none; margin-top: 1em; text-align: center;">
+                    <p>Competition has ended! Submit your final score.</p>
+                    <form id="result-form" method="post" action="{% url 'typing_game:submit_result' competition.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="wpm" id="form-wpm">
+                        <input type="hidden" name="accuracy" id="form-accuracy">
+                        <input type="hidden" name="score" id="form-score">
+                        <input type="hidden" name="num_correct" id="form-num-correct">
+                        <input type="hidden" name="total_questions" id="form-total-questions">
+                        <input type="hidden" name="time_taken" id="form-time-taken">
+                        <button type="submit" class="button primary">Submit Result</button>
+                    </form>
+                </div>
+            {%endif%}
+        </div>
+    {%endif%}
+    <div id="countdown-overlay">
+        <div id="countdown-number"></div>
+        <div id="countdown-message">The competition is about to begin...</div>
+    </div>
+    <div class="description_container">
+        <h1>Description</h1>
+        <div class="description">
+            {{competition.description}}
+        </div>
     </div>
 </div>
 <script>
@@ -303,149 +312,6 @@
             expandBtnIcon.className = 'fas fa-compress';
         }
     }
-    // --- Real-time Typing Calculation ---
-    const typingInput = document.getElementById('typing-input');
-    const textDisplay = document.getElementById('text-display');
-    const wpmElement = document.getElementById('wpm');
-    const accuracyElement = document.getElementById('accuracy');
-    const timeElement = document.getElementById('time');
-    const racerIcon = document.getElementById('racer-icon');
-
-    // New elements for countdown and submission
-    const countdownOverlay = document.getElementById('countdown-overlay');
-    const countdownNumber = document.getElementById('countdown-number');
-
-    let words = [];
-    let currentWordIndex = 0;
-    let correctWords = 0;
-    let totalCharsTyped = 0;
-
-    if (textDisplay) {
-        // Wrap each word in a span to control it individually
-        const originalText = textDisplay.textContent.trim();
-        words = originalText.split(/\s+/);
-        textDisplay.innerHTML = words.map(word => `<span>${word}</span>`).join(' ');
-    }
-
-    let startTime;
-    let timerInterval;
-    let competitionTimerInterval;
-
-    // --- Competition State ---
-    const competitionStarted = {{ competition.started|yesno:'true,false' }};
-    const competitionStartTime = new Date("{{ competition.start_time.isoformat }}");
-    const competitionDuration = {{ competition.duration }} * 60; // in seconds
-
-    document.addEventListener('DOMContentLoaded', function() {
-        if (competitionStarted) {
-            const now = new Date();
-            const countdownEndsAt = new Date(competitionStartTime.getTime());
-            const secondsUntilStart = (countdownEndsAt - now) / 1000;
-
-            if (secondsUntilStart > 0) {
-                startPreCompetitionCountdown(secondsUntilStart);
-            } else {
-                // Competition already in progress
-                const mainTimeLeft = competitionDuration + (secondsUntilStart);
-                if (mainTimeLeft > 0) {
-                    enableTyping();
-                    startMainCompetitionTimer(mainTimeLeft);
-                } else {
-                    endCompetition();
-                }
-            }
-        }
-    });
-
-    function startPreCompetitionCountdown(seconds) {
-        countdownOverlay.style.display = 'flex';
-        let count = Math.ceil(seconds);
-
-        const countdownInterval = setInterval(() => {
-            countdownNumber.textContent = count;
-            if (count <= 0) {
-                clearInterval(countdownInterval);
-                countdownOverlay.style.display = 'none';
-                enableTyping();
-                startMainCompetitionTimer(competitionDuration);
-            }
-            count--;
-        }, 1000);
-    }
-
-    function checkInput() {
-        // This is the typing timer for WPM, not the main competition timer
-        if (!startTime && typingInput.value.length > 0 && !typingInput.disabled) {
-            startTime = new Date();
-            timerInterval = setInterval(updateStats, 1000); // Update stats every second
-        }
-
-        const typedValue = typingInput.value;
-        const currentWord = words[currentWordIndex];
-        const wordSpans = textDisplay.querySelectorAll('span');
-
-        // When space is pressed, it means the user is moving to the next word
-        if (typedValue.endsWith(' ')) {
-            const typedWord = typedValue.trim();
-
-            // Don't do anything if the user just presses space
-            if (typedWord === '') {
-                typingInput.value = '';
-                return;
-            }
-
-            totalCharsTyped += typedWord.length + 1; // +1 for the space
-
-            if (typedWord === currentWord) {
-                correctWords++;
-                wordSpans[currentWordIndex].classList.add('correct-word');
-            } else {
-                wordSpans[currentWordIndex].classList.add('incorrect-word');
-            }
-
-            // Check if the paragraph is completed
-            if (currentWordIndex + 1 === words.length) {
-                // Reset to re-type
-                currentWordIndex = -1; // Will be incremented to 0
-                setTimeout(() => {
-                    wordSpans.forEach(span => span.className = '');
-                }, 200); // Small delay to let user see the last word's color
-            }
-
-            currentWordIndex++;
-            typingInput.value = ''; // Clear the textarea for the next word
-
-            // Remove the red background from the next word if it had one
-            if (wordSpans[currentWordIndex]) {
-                wordSpans[currentWordIndex].classList.remove('incorrect-word');
-            }
-
-        } else {
-            // Check the current word being typed for correctness in real-time
-            if (currentWord && currentWord.startsWith(typedValue)) {
-                typingInput.classList.remove('incorrect-word');
-            } else {
-                typingInput.classList.add('incorrect-word');
-            }
-        }
-
-        updateStats();
-    }
-
-    function startMainCompetitionTimer(durationInSeconds) {
-        let timeLeft = durationInSeconds;
-        competitionTimerInterval = setInterval(() => {
-            if (timeLeft <= 0) {
-                clearInterval(competitionTimerInterval);
-                endCompetition();
-            }
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = Math.floor(timeLeft % 60);
-            timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/${competition.duration} minute(s)`;
-            timeLeft--;
-        }, 1000);
-    }
-
     function enableTyping() {
         if (typingInput) {
             typingInput.disabled = false;
@@ -461,32 +327,297 @@
         }
         document.getElementById('submission-section').style.display = 'block';
     }
+</script>
+{% if competition.type != "Jumble-words" %}
+    <script id="normal-typing">
+        // --- Real-time Typing Calculation ---
+        const typingInput = document.getElementById('typing-input');
+        const textDisplay = document.getElementById('text-display');
+        const wpmElement = document.getElementById('wpm');
+        const accuracyElement = document.getElementById('accuracy');
+        const timeElement = document.getElementById('time');
+        const racerIcon = document.getElementById('racer-icon');
 
-    function updateStats() {
-        if (!startTime) return;
+        // New elements for countdown and submission
+        const countdownOverlay = document.getElementById('countdown-overlay');
+        const countdownNumber = document.getElementById('countdown-number');
 
-        // This is for WPM calculation, not the main timer display
-        const elapsedTime = (new Date() - startTime) / 1000;
-        // timeElement.textContent = `${Math.round(elapsedTime)}s`; // We now use the main timer
+        let words = [];
+        let currentWordIndex = 0;
+        let correctWords = 0;
+        let totalCharsTyped = 0;
 
-        // WPM is based on a standard of 5 characters per word (including space)
-        const wpm = (totalCharsTyped / 5) / (elapsedTime / 60);
-        wpmElement.textContent = elapsedTime > 0 ? Math.round(wpm) : 0;
-
-        // Accuracy is based on correctly typed words vs total words attempted
-        const accuracy = currentWordIndex > 0 ? (correctWords / currentWordIndex) * 100 : 100;
-        accuracyElement.textContent = `${Math.round(accuracy)}%`;
-
-        // Update racer position
-        if (racerIcon && words.length > 0) {
-            const progress = (currentWordIndex / words.length) * 100;
-            racerIcon.style.left = `${Math.min(progress, 100)}%`;
+        if (textDisplay) {
+            const originalText = textDisplay.textContent.trim();
+            let wordList = originalText.split(/\s+/);
+            if (competitionType === 'Reverse') {
+                // For reverse typing, we reverse the order of the words.
+                words = wordList.reverse();
+            } else {
+                words = wordList;
+            }
+            textDisplay.innerHTML = wordList.map(word => `<span>${word}</span>`).join(' ');
         }
 
-        // Update hidden form fields for submission
-        document.getElementById('form-wpm').value = wpmElement.textContent;
-        document.getElementById('form-accuracy').value = accuracyElement.textContent.replace('%', '');
-        document.getElementById('form-time-taken').value = elapsedTime;
-    }
-</script>
+        let startTime;
+        let timerInterval;
+        let competitionTimerInterval;
+
+        // --- Competition State ---
+        const competitionStarted = {{ competition.started|yesno:'true,false' }};
+        const competitionStartTime = new Date("{{ competition.start_time.isoformat }}");
+        const competitionDuration = {{ competition.duration }} * 60; // in seconds
+        const competitionType = "{{ competition.type }}";
+        const userRole = "{{ user_role }}"; // Define userRole globally
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (competitionStarted) { // This handles the countdown for all types
+                const now = new Date();
+                const countdownEndsAt = new Date(competitionStartTime.getTime());
+                const secondsUntilStart = (countdownEndsAt - now) / 1000;
+
+                if (secondsUntilStart > 0) {
+                    startPreCompetitionCountdown(secondsUntilStart);
+                } else {
+                    // Competition already in progress
+                    const mainTimeLeft = competitionDuration + (secondsUntilStart);
+                    if (mainTimeLeft > 0) {
+                        // Only enable typing if the user is a participant
+                        if (userRole === 'participant') {
+                            enableTyping();
+                        }
+                        startMainCompetitionTimer(mainTimeLeft);
+                    } else {
+                        endCompetition();
+                    }
+                }
+            }
+        });
+
+        function startPreCompetitionCountdown(seconds) {
+            countdownOverlay.style.display = 'flex';
+            let count = Math.ceil(seconds);
+
+            const countdownInterval = setInterval(() => {
+                countdownNumber.textContent = count;
+                if (count <= 0) {
+                    countdownOverlay.style.display = 'none';
+                    if (userRole === 'participant') {
+                        enableTyping();
+                    }
+                    startMainCompetitionTimer(competitionDuration);
+                }
+                count--;
+            }, 1000);
+        }
+
+        function checkInput() {
+            // This is the typing timer for WPM, not the main competition timer
+            if (!startTime && typingInput.value.length > 0 && !typingInput.disabled) {
+                startTime = new Date();
+                timerInterval = setInterval(updateStats, 1000); // Update stats every second
+            }
+
+            const typedValue = typingInput.value;
+            const currentWord = words[currentWordIndex];
+            let wordSpans = Array.from(textDisplay.querySelectorAll('span'));
+
+            // If it's a reverse competition, the spans need to be checked in reverse order
+            if (competitionType === 'Reverse') {
+                wordSpans.reverse();
+            }
+
+            // When space is pressed, it means the user is moving to the next word
+            if (typedValue.endsWith(' ')) {
+                const typedWord = typedValue.trim();
+
+                // Don't do anything if the user just presses space
+                if (typedWord === '') {
+                    typingInput.value = '';
+                    return;
+                }
+
+                totalCharsTyped += typedWord.length + 1; // +1 for the space
+
+                if (typedWord === currentWord) {
+                    correctWords++;
+                    wordSpans[currentWordIndex].classList.add('correct-word');
+                } else {
+                    wordSpans[currentWordIndex].classList.add('incorrect-word');
+                }
+
+                // Check if the paragraph is completed
+                if (currentWordIndex + 1 === words.length) {
+                    // Reset to re-type
+                    currentWordIndex = -1; // Will be incremented to 0
+                    setTimeout(() => {
+                        wordSpans.forEach(span => span.className = '');
+                    }, 200); // Small delay to let user see the last word's color
+                }
+
+                currentWordIndex++;
+                typingInput.value = ''; // Clear the textarea for the next word
+
+                // Remove the red background from the next word if it had one
+                if (wordSpans[currentWordIndex]) {
+                    wordSpans[currentWordIndex].classList.remove('incorrect-word');
+                }
+
+            } else {
+                // Check the current word being typed for correctness in real-time
+                if (currentWord && currentWord.startsWith(typedValue)) {
+                    typingInput.classList.remove('incorrect-word');
+                } else {
+                    typingInput.classList.add('incorrect-word');
+                }
+            }
+
+            updateStats();
+        }
+
+        function startMainCompetitionTimer(durationInSeconds) {
+            let timeLeft = durationInSeconds;
+            competitionTimerInterval = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(competitionTimerInterval);
+                    endCompetition();
+                }
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = Math.floor(timeLeft % 60);
+                timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/${competition.duration} minute(s)`;
+                timeLeft--;
+            }, 1000);
+        }
+        function updateStats() {
+            if (!startTime) return;
+
+            const elapsedTime = (new Date() - startTime) / 1000;
+
+            // WPM is based on a standard of 5 characters per word (including space)
+            const wpm = (totalCharsTyped / 5) / (elapsedTime / 60);
+            wpmElement.textContent = elapsedTime > 0 ? Math.round(wpm) : 0;
+
+            // Accuracy is based on correctly typed words vs total words attempted
+            const accuracy = currentWordIndex > 0 ? (correctWords / currentWordIndex) * 100 : 100;
+            accuracyElement.textContent = `${Math.round(accuracy)}%`;
+
+            // Update racer position
+            if (racerIcon && words.length > 0) {
+                const progress = (currentWordIndex / words.length) * 100;
+                racerIcon.style.left = `${Math.min(progress, 100)}%`;
+            }
+
+            // Update hidden form fields for submission
+            document.getElementById('form-wpm').value = wpmElement.textContent;
+            document.getElementById('form-accuracy').value = accuracyElement.textContent.replace('%', '');
+            document.getElementById('form-time-taken').value = elapsedTime;
+        }
+    </script>
+{%else%}
+    <script id="jumble-words" >
+        // --- Jumble Words Game Logic ---
+        const typingInput = document.getElementById('typing-input');
+        const textDisplay = document.getElementById('text-display');
+        const timeElement = document.getElementById('time');
+        const wpmElement = document.getElementById('wpm');
+        const accuracyElement = document.getElementById('accuracy');
+
+        // --- Competition State ---
+        const competitionStarted = {{ competition.started|yesno:'true,false' }};
+        const competitionStartTime = new Date("{{ competition.start_time.isoformat }}");
+        const competitionDuration = {{ competition.duration }} * 60; // in seconds
+        const userRole = "{{ user_role }}";
+
+        // Parse jumbled words and answers from the JSON data
+        const questions = {{ competition.paragraphs|safe }};
+        let currentQuestionIndex = 0;
+        let correctAnswers = 0;
+        let startTime;
+
+        function displayQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                textDisplay.innerHTML = `<p style="font-size: 1.5em; text-align: center; color: var(--accent-color);">${questions[currentQuestionIndex].text}</p>`;
+                typingInput.value = '';
+                typingInput.focus();
+            } else {
+                // All questions answered
+                textDisplay.innerHTML = `<p style="text-align: center; color: var(--primary-color);">You have completed all the words!</p>`;
+                endCompetition();
+            }
+        }
+
+        function checkInput() {
+            // This function is triggered on input, but for jumble, we check on Enter key
+        }
+
+        typingInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent form submission
+                const userAnswer = typingInput.value.trim();
+                if (userAnswer === '') return;
+
+                if (userAnswer.toLowerCase() === questions[currentQuestionIndex].answer.toLowerCase()) {
+                    correctAnswers++;
+                }
+                currentQuestionIndex++;
+                updateStats();
+                displayQuestion();
+            }
+        });
+
+        function startMainCompetitionTimer(durationInSeconds) {
+            let timeLeft = durationInSeconds;
+            setInterval(() => {
+                if (timeLeft <= 0) {
+                    endCompetition();
+                }
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = Math.floor(timeLeft % 60);
+                timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                timeLeft--;
+            }, 1000);
+        }
+
+        function updateStats() {
+            wpmElement.textContent = correctAnswers; // Using WPM box to show correct answers
+            document.querySelector('h4:first-of-type').textContent = 'Correct:';
+            
+            const accuracy = questions.length > 0 ? (correctAnswers / questions.length) * 100 : 0;
+            accuracyElement.textContent = `${accuracy.toFixed(1)}%`;
+        }
+
+        function endCompetition() {
+            if (typingInput.disabled) return; // Prevent multiple calls
+            typingInput.disabled = true;
+            typingInput.placeholder = "Time's up!";
+
+            const timeTaken = startTime ? (new Date() - startTime) / 1000 : competitionDuration;
+            const totalQuestions = questions.length;
+
+            // Score calculation: ( (numOfCorrect / totalWordOrSentences) * 80) + ( ( (totalDurationInSeconds - timeTaken) / totalDurationInSeconds) * 20)
+            const accuracyScore = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 80 : 0;
+            const timeBonus = competitionDuration > 0 ? ((competitionDuration - Math.min(timeTaken, competitionDuration)) / competitionDuration) * 20 : 0;
+            const finalScore = accuracyScore + timeBonus;
+
+            // Update hidden form fields
+            document.getElementById('form-score').value = finalScore.toFixed(2);
+            document.getElementById('form-num-correct').value = correctAnswers;
+            document.getElementById('form-total-questions').value = totalQuestions;
+            document.getElementById('form-time-taken').value = timeTaken.toFixed(2);
+
+            document.getElementById('submission-section').style.display = 'block';
+        }
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (userRole === 'participant') {
+                enableTyping();
+                startTime = new Date();
+                displayQuestion();
+                updateStats();
+                startMainCompetitionTimer(competitionDuration);
+            }
+        });
+    </script>
+{%endif%}
 {% endblock %}

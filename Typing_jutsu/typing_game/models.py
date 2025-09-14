@@ -40,7 +40,7 @@ class Organizer(models.Model):
 
 class Competition(models.Model):
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.JSONField(default=list)
     start_time = models.DateTimeField()
     duration = models.IntegerField(help_text="Duration in minutes", default=3)
     organizer = models.ForeignKey(Organizer, on_delete=models.CASCADE, related_name='competitions')
@@ -74,11 +74,21 @@ class CompetitionResult(models.Model):
     time_taken = models.FloatField(default=0.0)  # in seconds
     total_keystrokes = models.IntegerField(default=0)
     correct_keystrokes = models.IntegerField(default=0)
+    num_correct = models.IntegerField(default=0) # For jumble-words
+    total_questions = models.IntegerField(default=0) # For jumble-words
     submitted_at = models.DateTimeField(auto_now_add=True)
+    score = models.FloatField(default=0.0, editable=False)
 
     class Meta:
         db_table = 'competition_results'
         unique_together = ('competition', 'participant')
+
+    def save(self, *args, **kwargs):
+        # Only calculate score for typing-based games.
+        # Jumble-word score is calculated on the client and saved directly.
+        if self.competition.type in ['Normal', 'Reverse'] and self.accuracy > 0:
+            self.score = self.wpm * (self.accuracy / 100)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.participant.name} - {self.competition.title}"

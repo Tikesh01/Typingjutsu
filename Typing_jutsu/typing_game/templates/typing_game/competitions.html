@@ -6,6 +6,9 @@ Competition
 
 {% block page %}
 <style>
+    .competition-page{
+        width: 100%;
+    }
     .page-header{
         display: flex;
         justify-content: space-between;
@@ -20,18 +23,19 @@ Competition
         padding: 1em;
 
         .each_competition{
-            border: 1px solid gray;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             padding: 1em;
             background: rgba(91, 88, 88, 0.186);
             #competition_header{
                 margin: 0.3em 0;
-                border-bottom: 1px solid whitesmoke;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                 padding-bottom: 0.5em;
                 .actions{
                     width: 40%;
                     display: flex;
                     justify-content: space-between;
+                    align-items: center;
                 }
             }
             .each_comp_more_detail{
@@ -58,47 +62,49 @@ Competition
         background: rgb(153, 80, 221);
     }
 </style>
-<div class="page-header">
-    <h1>Competitions</h1>
-    <a href="{% url 'typing_game:create_competition' %}" class="button">Create Competition</a>
-</div>
+<div class="competition-page">
+    <div class="page-header">
+        <h1>Competitions</h1>
+        <a href="{% url 'typing_game:create_competition' %}" class="button">Create Competition</a>
+    </div>
 
-<div class="competition_list_container">
-    {% for competition in competitions %}
-        <div class="each_competition">
-            <div id="competition_header" class="page-header">
-                <h2>{{competition.title}}</h2>
-                {% if competition.organizer.id == profile_user.id and user_role == 'organizer' %}
-                    <div class="actions"> 
-                        <a href="{% url 'typing_game:edit_competition' competition.id %}" class="button">Edit</a>
-                        <a href="{% url 'typing_game:delete_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to delete ')">Delete</a>
+    <div class="competition_list_container">
+        {% for competition in competitions %}
+            <div class="each_competition">
+                <div id="competition_header" class="page-header">
+                    <h2>{{competition.title}}</h2>
+                    {% if competition.organizer.id == profile_user.id and user_role == 'organizer' %}
+                        <div class="actions"> 
+                            <a href="{% url 'typing_game:edit_competition' competition.id %}" class="button">Edit</a>
+                            <a href="{% url 'typing_game:delete_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to delete ')">Delete</a>
+                            {% if competition.status == 'active' %}
+                                <a href="{% url 'typing_game:live_competition' competition.id %}" class="button" onclick="return confirm('Please confirm')">Go to Live</a>
+                                <a href="{% url 'typing_game:deactivate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to deactivate this competition?')">Deactivate</a>
+                            {% else %}
+                                <a href="{% url 'typing_game:activate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to activate this competition?')">Activate</a>
+                            {% endif %}
+                        </div>
+                    {% else %}
                         {% if competition.status == 'active' %}
-                            <a href="{% url 'typing_game:live_competition' competition.id %}" class="button" onclick="return confirm('Please confirm')">Go to Live</a>
-                            <a href="{% url 'typing_game:deactivate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to deactivate this competition?')">Deactivate</a>
-                        {% else %}
-                            <a href="{% url 'typing_game:activate_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to activate this competition?')">Activate</a>
-                        {% endif %}
-                    </div>
-                {% else %}
-                    {% if competition.status == 'active' %}
-                        <a href="{% url 'typing_game:join_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to Join')">join</a>
-                    {% elif competition.started %}
-                        <span class="button-info">Competition is started</span>
-                    {%else%}
-                        <span class="button-info">Competition Not activated yet</span>
-                    {%endif%}
-                {% endif %}
+                            <a href="{% url 'typing_game:join_competition' competition.id %}" class="button" onclick="return confirm('Are you sure you want to Join')">join</a>
+                        {% elif competition.started %}
+                            <span class="button-info">Competition is started</span>
+                        {%else%}
+                            <span class="button-info">Competition is Not activated yet</span>
+                        {%endif%}
+                    {% endif %}
+                </div>
+                <div class="each_comp_more_detail">
+                    <p id="description"><strong></strong>{{competition.description}}</p>
+                    <p><strong>Start Time: </strong>{{competition.start_time}}</p>
+                    <p><strong>End Time: </strong>{{competition.end_time}}</p>
+                    <p><strong>Duration: </strong>{{competition.duration}} minute(s)</p>
+                    <p><strong>Type: </strong>{{competition.type}}</p>
+                </div>
             </div>
-            <div class="each_comp_more_detail">
-                <p id="description"><strong></strong>{{competition.description}}</p>
-                <p><strong>Start Time: </strong>{{competition.start_time}}</p>
-                <p><strong>End Time: </strong>{{competition.end_time}}</p>
-                <p><strong>Duration: </strong>{{competition.duration}} minute(s)</p>
-                <p><strong>Type: </strong>{{competition.type}}</p>
-            </div>
-        </div>
-    {%empty%}
-        <h3>No Competitions Available right Now</h3>
-    {% endfor %}
+        {%empty%}
+            <h3>No Competitions Available right Now</h3>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

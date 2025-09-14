@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from .models import Participant, Organizer, Competition, CompetitionResult
+from django.db import models
 from .decorators import login_required, participant_required, organizer_required
 from django.utils import timezone
 from datetime import timedelta
@@ -216,6 +217,7 @@ def create_competition(request):
             # Prepare data for JSONField
             paragraphs_data = []
             if competition_type == 'Jumble-words':
+                paragraphs_list = [p.strip() for p in paragraphs_raw.split('\n') if p.strip()]
                 answers_raw = request.POST.get('ans_juble_word', '')
                 answers_list = [a.strip() for a in answers_raw.split('\n') if a.strip()]
                 if len(paragraphs_list) != len(answers_list):
@@ -223,7 +225,7 @@ def create_competition(request):
                     return render(request, 'typing_game/create_competition.html', get_auth_context(request))
                 
                 for jumbled, answer in zip(paragraphs_list, answers_list):
-                    paragraphs_data.append({'jumbled': jumbled, 'answer': answer})
+                    paragraphs_data.append({'text': jumbled, 'answer': answer})
             else:
                 for para in paragraphs_list:
                     paragraphs_data.append({'text': para})
@@ -377,15 +379,31 @@ def submit_result(request, competition_id):
         competition = get_object_or_404(Competition, id=competition_id)
         participant = get_object_or_404(Participant, id=participant_id)
 
-        wpm = float(request.POST.get('wpm', 0))
-        accuracy = float(request.POST.get('accuracy', 0))
-        time_taken = float(request.POST.get('time_taken', 0))
+        defaults = {
+            'competition': competition,
+            'participant': participant,
+        }
+
+        if competition.type == 'Jumble-words':
+            # Handle Jumble-words result
+            defaults['score'] = float(request.POST.get('score') or 0)
+            defaults['time_taken'] = float(request.POST.get('time_taken') or 0)
+            defaults['num_correct'] = int(request.POST.get('num_correct') or 0)
+            defaults['total_questions'] = int(request.POST.get('total_questions') or 0)
+            # Set typing-specific fields to 0 for jumble games
+            defaults['wpm'] = 0
+            defaults['accuracy'] = 0
+        else:
+            # Handle Normal/Reverse typing result
+            defaults['wpm'] = float(request.POST.get('wpm') or 0)
+            defaults['accuracy'] = float(request.POST.get('accuracy') or 0)
+            defaults['time_taken'] = float(request.POST.get('time_taken') or 0)
 
         # Use update_or_create to handle re-submissions
         CompetitionResult.objects.update_or_create(
             competition=competition,
             participant=participant,
-            defaults={'wpm': wpm, 'accuracy': accuracy, 'time_taken': time_taken}
+            defaults=defaults
         )
         messages.success(request, "Your result has been submitted successfully!")
         return redirect('typing_game:competitions') # Redirect to competitions list
@@ -394,7 +412,30 @@ def submit_result(request, competition_id):
 @login_required
 def leaderboard(request):
     """Leaderboard page - accessible to all logged-in users"""
-    return render(request, 'typing_game/leaderboard.html', get_auth_context(request))
+    context = get_auth_context(request)
+    # Fetch competitions that have ended or are active, along with their results ordered by score
+    competitions_with_results = Competition.objects.prefetch_related(
+        models.Prefetch('results', queryset=CompetitionResult.objects.order_by('-score'))
+    ).order_by('-start_time')
+    context['competitions_with_results'] = competitions_with_results
+    return render(request, 'typing_game/leaderboard.html', context)
+
+@organizer_required
+def delete_result(request, result_id):
+    """Allows an organizer to delete a specific result from their competition."""
+    try:
+        result = get_object_or_404(CompetitionResult, id=result_id)
+        organizer_id = request.session.get('user_id')
+
+        # Check if the logged-in user is the organizer of the competition
+        if result.competition.organizer.id == organizer_id:
+            result.delete()
+            messages.success(request, "The result has been deleted successfully.")
+        else:
+            messages.error(request, "You do not have permission to delete this result.")
+    except Exception as e:
+        messages.error(request, f"An error occurred: {e}")
+    return redirect('typing_game:leaderboard')
 
 # Public pages
 def terms(request):
