@@ -410,6 +410,7 @@ def submit_result(request, competition_id):
     return redirect('typing_game:live_competition', competition_id)
 
 @login_required
+@organizer_required
 def leaderboard(request):
     """Leaderboard page - accessible to all logged-in users"""
     context = get_auth_context(request)
