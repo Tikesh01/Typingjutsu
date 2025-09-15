@@ -261,12 +261,27 @@ def edit_competition(request, competition_id):
             competition.type = request.POST.get('type')
             competition.start_time = request.POST.get('start_time')
             competition.duration = request.POST.get('duration')            
-
+            
             paragraphs_raw = request.POST.get('paragraphs')
-            paragraphs_list = [p.strip() for p in paragraphs_raw.split('\n\n') if p.strip()]
+            paragraphs_data = []
 
-            competition.paragraphs = [{'text': para} for para in paragraphs_list]
-
+            if competition.type == 'Jumble-words':
+                paragraphs_list = [p.strip() for p in paragraphs_raw.split('\n') if p.strip()]
+                answers_raw = request.POST.get('ans_juble_word', '')
+                answers_list = [a.strip() for a in answers_raw.split('\n') if a.strip()]
+                if len(paragraphs_list) != len(answers_list):
+                    messages.error(request, "The number of jumbled words must match the number of answers.")
+                    # Pass existing data back to the template
+                    context = {'competition': competition, 'paragraphs_raw': paragraphs_raw, 'answers_raw': answers_raw}
+                    return render(request, 'typing_game/edit_competition.html', context)
+                
+                for jumbled, answer in zip(paragraphs_list, answers_list):
+                    paragraphs_data.append({'text': jumbled, 'answer': answer})
+            else:
+                paragraphs_list = [p.strip() for p in paragraphs_raw.split('\n\n') if p.strip()]
+                paragraphs_data = [{'text': para} for para in paragraphs_list]
+            
+            competition.paragraphs = paragraphs_data
             competition.save()
             messages.success(request, f"Competition '{competition.title}' updated successfully!")
             return redirect('typing_game:competitions')
@@ -274,7 +289,17 @@ def edit_competition(request, competition_id):
             messages.error(request, f"An error occurred while updating the competition: {e}")
             return render(request, 'typing_game/edit_competition.html', {'competition': competition})
 
-    return render(request, 'typing_game/edit_competition.html', {'competition': competition})
+    # Prepare data for rendering the edit form
+    paragraphs_raw = ""
+    answers_raw = ""
+    if competition.type == 'Jumble-words':
+        paragraphs_raw = '\n'.join([p.get('text', '') for p in competition.paragraphs])
+        answers_raw = '\n'.join([p.get('answer', '') for p in competition.paragraphs])
+    else:
+        paragraphs_raw = '\n\n'.join([p.get('text', '') for p in competition.paragraphs])
+
+    context = {'competition': competition, 'paragraphs_raw': paragraphs_raw, 'answers_raw': answers_raw}
+    return render(request, 'typing_game/edit_competition.html', context)
 
 @organizer_required
 def delete_competition(request, competition_id):

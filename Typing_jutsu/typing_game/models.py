@@ -47,7 +47,7 @@ class Competition(models.Model):
     participants = models.ManyToManyField(Participant, related_name='competitions',)
     type = models.CharField(
         max_length=15,
-        choices=[('Normal','normal'), ('Reverse','reverse'), ('Jumble-Word','jumble-word')],
+        choices=[('Normal','Normal'), ('Reverse','Reverse'), ('Jumble-words','Jumble-words')],
     )
     paragraphs = models.JSONField(default=list) 
     expired = models.BooleanField(default=False)
