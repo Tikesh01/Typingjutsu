@@ -349,6 +349,7 @@
         let currentWordIndex = 0;
         let correctWords = 0;
         let totalCharsTyped = 0;
+        let wordsAttempted = 0; // New variable to track attempted words
         let competitionCheckInterval;
 
         if (textDisplay) {
@@ -453,6 +454,8 @@
                     return;
                 }
 
+                wordsAttempted++; // Increment on every word attempt
+
                 totalCharsTyped += typedWord.length + 1; // +1 for the space
 
                 if (typedWord === currentWord) {
@@ -520,8 +523,8 @@
             const wpm = (totalCharsTyped / 5) / (elapsedTime / 60);
             wpmElement.textContent = elapsedTime > 0 ? Math.round(wpm) : 0;
 
-            // Accuracy is based on correctly typed words vs total words attempted
-            const accuracy = currentWordIndex > 0 ? (correctWords / currentWordIndex) * 100 : 100;
+            // Accuracy is based on correctly typed words vs total words attempted (using our new variable)
+            const accuracy = wordsAttempted > 0 ? (correctWords / wordsAttempted) * 100 : 100;
             accuracyElement.textContent = `${Math.round(accuracy)}%`;
 
             // Update racer position
