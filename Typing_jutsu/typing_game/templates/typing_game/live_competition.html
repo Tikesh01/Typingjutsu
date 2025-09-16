@@ -353,14 +353,10 @@
 
         if (textDisplay) {
             const originalText = textDisplay.textContent.trim();
-            let wordList = originalText.split(/\s+/);
-            if (competitionType === 'Reverse') {
-                // For reverse typing, we reverse the order of the words.
-                words = wordList.reverse();
-            } else {
-                words = wordList;
-            }
-            textDisplay.innerHTML = wordList.map(word => `<span>${word}</span>`).join(' ');
+            words = originalText.split(/\s+/);
+            // Display the words in normal order, but wrap them in spans for highlighting
+            textDisplay.innerHTML = words.map(word => `<span>${word}</span>`).join(' ');
+            currentWordIndex = competitionType === 'Reverse' ? words.length - 1 : 0;
         }
 
         let startTime;
@@ -444,13 +440,8 @@
             }
 
             const typedValue = typingInput.value;
-            const currentWord = words[currentWordIndex];
-            let wordSpans = Array.from(textDisplay.querySelectorAll('span'));
-
-            // If it's a reverse competition, the spans need to be checked in reverse order
-            if (competitionType === 'Reverse') {
-                wordSpans.reverse();
-            }
+            const currentWord = words[currentWordIndex]; // The word we expect the user to type
+            const wordSpans = Array.from(textDisplay.querySelectorAll('span'));
 
             // When space is pressed, it means the user is moving to the next word
             if (typedValue.endsWith(' ')) {
@@ -471,16 +462,22 @@
                     wordSpans[currentWordIndex].classList.add('incorrect-word');
                 }
 
-                // Check if the paragraph is completed
-                if (currentWordIndex + 1 === words.length) {
-                    // Reset to re-type
-                    currentWordIndex = -1; // Will be incremented to 0
-                    setTimeout(() => {
-                        wordSpans.forEach(span => span.className = '');
-                    }, 200); // Small delay to let user see the last word's color
+                if (competitionType === 'Reverse') {
+                    currentWordIndex--;
+                    if (currentWordIndex < 0) {
+                        // Reset to re-type from the end
+                        currentWordIndex = words.length - 1;
+                        setTimeout(() => wordSpans.forEach(span => span.className = ''), 200);
+                    }
+                } else {
+                    currentWordIndex++;
+                    if (currentWordIndex >= words.length) {
+                        // Reset to re-type from the beginning
+                        currentWordIndex = 0;
+                        setTimeout(() => wordSpans.forEach(span => span.className = ''), 200);
+                    }
                 }
 
-                currentWordIndex++;
                 typingInput.value = ''; // Clear the textarea for the next word
 
                 // Remove the red background from the next word if it had one
@@ -490,7 +487,7 @@
 
             } else {
                 // Check the current word being typed for correctness in real-time
-                if (currentWord && currentWord.startsWith(typedValue)) {
+                if (currentWord && currentWord.toLowerCase().startsWith(typedValue.toLowerCase())) {
                     typingInput.classList.remove('incorrect-word');
                 } else {
                     typingInput.classList.add('incorrect-word');
@@ -509,7 +506,8 @@
                 }
                 const minutes = Math.floor(timeLeft / 60);
                 const seconds = Math.floor(timeLeft % 60);
-                timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/{{competition.duration}} minute(s)`;
+                const totalMinutes = Math.floor(durationInSeconds / 60);
+                timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/${totalMinutes} minute(s)`;
                 timeLeft--;
             }, 1000);
         }
@@ -528,7 +526,13 @@
 
             // Update racer position
             if (racerIcon && words.length > 0) {
-                const progress = (currentWordIndex / words.length) * 100;
+                let progress = 0;
+                if (competitionType === 'Reverse') {
+                    // Progress goes from 0 to 100 as we go from last word to first
+                    progress = ((words.length - 1 - currentWordIndex) / (words.length -1)) * 100;
+                } else {
+                    progress = (currentWordIndex / words.length) * 100;
+                }
                 racerIcon.style.left = `${Math.min(progress, 100)}%`;
             }
 
@@ -557,6 +561,10 @@
         const questions = {{ competition.paragraphs|safe }};
         let currentQuestionIndex = 0;
         let correctAnswers = 0;
+        let competitionCheckInterval;
+        const countdownOverlay = document.getElementById('countdown-overlay');
+        const countdownNumber = document.getElementById('countdown-number');
+
         let startTime;
 
         function displayQuestion() {
@@ -590,16 +598,62 @@
             }
         });
 
+        function handleCompetitionStart(startTime) {
+            const now = new Date();
+            const countdownEndsAt = new Date(startTime.getTime());
+            const secondsUntilStart = (countdownEndsAt - now) / 1000;
+
+            if (secondsUntilStart > 0) {
+                startPreCompetitionCountdown(secondsUntilStart);
+            } else {
+                // Competition already in progress
+                const mainTimeLeft = competitionDuration + (secondsUntilStart);
+                if (mainTimeLeft > 0) {
+                    if (userRole === 'participant') {
+                        enableTypingAndStartGame();
+                    }
+                    startMainCompetitionTimer(mainTimeLeft);
+                } else {
+                    endCompetition();
+                }
+            }
+        }
+
+        function startPreCompetitionCountdown(seconds) {
+            countdownOverlay.style.display = 'flex';
+            let count = Math.ceil(seconds);
+
+            const countdownInterval = setInterval(() => {
+                countdownNumber.textContent = count;
+                if (count <= 0) {
+                    countdownOverlay.style.display = 'none';
+                    if (userRole === 'participant') {
+                        enableTypingAndStartGame();
+                    }
+                    startMainCompetitionTimer(competitionDuration);
+                    clearInterval(countdownInterval);
+                }
+                count--;
+            }, 1000);
+        }
+
         function startMainCompetitionTimer(durationInSeconds) {
             let timeLeft = durationInSeconds;
-            setInterval(() => {
+            const timerInterval = setInterval(() => {
                 if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
                     endCompetition();
                 }
                 const minutes = Math.floor(timeLeft / 60);
                 const seconds = Math.floor(timeLeft % 60);
-                timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                timeLeft--;
+                const totalMinutes = Math.floor(durationInSeconds / 60);
+                if (timeElement) {
+                    timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}/${totalMinutes} minute(s)`;
+                }
+                // Only decrement if not paused or ended
+                if (timeLeft > 0) {
+                    timeLeft--;
+                }
             }, 1000);
         }
 
@@ -633,14 +687,32 @@
             document.getElementById('submission-section').style.display = 'block';
         }
 
+        function enableTypingAndStartGame() {
+            enableTyping();
+            startTime = new Date();
+            displayQuestion();
+            updateStats();
+        }
+
+        function checkCompetitionStatus() {
+            fetch(`{% url 'typing_game:competition_status_api' competition.id %}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.started) {
+                        clearInterval(competitionCheckInterval); // Stop polling
+                        const serverStartTime = new Date(data.start_time);
+                        handleCompetitionStart(serverStartTime);
+                    }
+                })
+                .catch(error => console.error('Error checking competition status:', error));
+        }
+
         // Initial setup on page load
         document.addEventListener('DOMContentLoaded', function() {
-            if (userRole === 'participant') {
-                enableTyping();
-                startTime = new Date();
-                displayQuestion();
-                updateStats();
-                startMainCompetitionTimer(competitionDuration);
+            if (userRole === 'participant' && !competitionStarted) {
+                competitionCheckInterval = setInterval(checkCompetitionStatus, 3000);
+            } else if (competitionStarted) {
+                handleCompetitionStart(competitionStartTime);
             }
         });
     </script>
